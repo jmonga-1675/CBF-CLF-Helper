@@ -9,8 +9,8 @@ function [u, B, feas, comp_time] = ctrlCbfQp(obj, x, u_ref, verbose)
     %           feas: 1 if QP is feasible, 0 if infeasible. (Note: even
     %           when qp is infeasible, u is determined from quadprog.)
     %           compt_time: computation time to run the solver.
-    if isempty(obj.cbf)
-        error('CBF is not defined so ctrlCbfQp cannot be used. Create a class function [defineCbf] and set up cbf with symbolic expression.');
+    if obj.n_cbf == 0
+        error('CBF is not set up so ctrlCbfQp cannot be used.');
     end
         
     if nargin < 3

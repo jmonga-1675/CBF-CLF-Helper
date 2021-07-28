@@ -12,11 +12,11 @@ function [u, slack, B, V, feas, comp_time] = ctrlCbfClfQp(obj, x, u_ref, with_sl
     %           feas: 1 if QP is feasible, 0 if infeasible. (Note: even
     %           when qp is infeasible, u is determined from quadprog.)
     %           comp_time: computation time to run the solver.
-    if isempty(obj.clf)
-        error('CLF is not defined so ctrlCbfClfQp cannot be used. Create a class function [defineClf] and set up clf with symbolic expression.');
+    if obj.n_clf == 0
+        error('CLF is not set up so ctrlCbfClfQp cannot be used.');
     end
-    if isempty(obj.cbf)
-        error('CBF is not defined so ctrlCbfClfQp cannot be used. Create a class function [defineCbf] and set up cbf with symbolic expression.');
+    if obj.n_cbf == 0
+        error('CBF is not set up so ctrlCbfClfQp cannot be used.');
     end
         
     if nargin < 3

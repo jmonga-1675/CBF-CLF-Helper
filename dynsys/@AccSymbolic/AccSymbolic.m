@@ -2,10 +2,11 @@
 % Aaron Ames et al. Control Barrier Function based Quadratic Programs 
 % with Application to Adaptive Cruise Control, CDC 2014, Table 1.
 
-classdef ACC < CtrlAffineSys    
+classdef AccSymbolic < CtrlAffineSys    
     methods        
-        function obj = ACC(params)
-            obj = obj@CtrlAffineSys(params);            
+        function obj = AccSymbolic(params)
+            % Always using symbolic option for setup.
+            obj = obj@CtrlAffineSys(params, 'symbolic');            
         end
         function Fr = getFr(obj, x)
             v = x(2);

@@ -1,7 +1,8 @@
-clear all; close all;
+clear all; 
+close all;
 
 dt = 0.02;
-sim_t = 20;
+sim_t = 15;
 x0 = [0; 20; 100];
 
 %% Parameters are from 
@@ -29,8 +30,12 @@ params.cbf.rate = 5;
 params.weight.input = 2/params.m^2;
 params.weight.slack = 2e-2;
 
-%%
-accSys = ACC(params);
+params.xdim = 3;
+params.udim = 1;
+
+%% Either option works.
+accSys = AccSymbolic(params);
+% accSys = AccBuiltIn(params);
 
 odeFun = @accSys.dynamics;
 controller = @accSys.ctrlCbfClfQp;
@@ -80,7 +85,7 @@ function plot_results(ts, xs, us, slacks, hs, Vs, params)
     orange = [0.965, 0.529, 0.255];
     grey = 0.01 *[19.6, 18.8, 19.2];
     
-    figure(1);
+    figure;
     subplot(6,1,1);
     p = plot(ts, xs(:, 2));
     p.Color = blue;

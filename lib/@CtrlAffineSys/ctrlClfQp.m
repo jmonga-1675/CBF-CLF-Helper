@@ -12,8 +12,8 @@ function [u, slack, V, feas, comp_time] = ctrlClfQp(obj, x, u_ref, with_slack, v
     %           when qp is infeasible, u is determined from quadprog.)
     %           comp_time: computation time to run the solver.
 
-    if isempty(obj.clf)
-        error('CLF is not defined so ctrlClfQp cannot be used. Create a class function [defineClf] and set up clf with symbolic expression.');
+    if obj.n_clf == 0
+        error('CLF is not set up so ctrlClfQp cannot be used.');
     end
 
     if nargin < 3 || isempty(u_ref)

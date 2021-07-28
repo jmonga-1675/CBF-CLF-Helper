@@ -15,8 +15,8 @@ sim_t = 30;
 
 params.cbf_gamma0 = 1;
 
-params.u_max = 7;
-params.u_min  = -7;
+params.u_max = 4;
+params.u_min  = -4;
 
 params.clf.rate = 0.7;
 params.cbf.rate = 3;
