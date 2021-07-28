@@ -12,11 +12,11 @@ function [u, slack, B, V, feas, comp_time] = ctrlCbfClfQp(obj, x, u_ref, with_sl
     %           feas: 1 if QP is feasible, 0 if infeasible. (Note: even
     %           when qp is infeasible, u is determined from quadprog.)
     %           comp_time: computation time to run the solver.
-    if isempty(obj.clf)
-        error('CLF is not defined so ctrlCbfClfQp cannot be used. Create a class function [defineClf] and set up clf with symbolic expression.');
+    if obj.n_clf == 0
+        error('CLF is not set up so ctrlCbfClfQp cannot be used.');
     end
-    if isempty(obj.cbf)
-        error('CBF is not defined so ctrlCbfClfQp cannot be used. Create a class function [defineCbf] and set up cbf with symbolic expression.');
+    if obj.n_cbf == 0
+        error('CBF is not set up so ctrlCbfClfQp cannot be used.');
     end
         
     if nargin < 3
@@ -53,7 +53,7 @@ function [u, slack, B, V, feas, comp_time] = ctrlCbfClfQp(obj, x, u_ref, with_sl
             LfB + obj.params.cbf.rate * B];                
         % Add input constraints if u_max or u_min exists.
         if isfield(obj.params, 'u_max')
-            A = [A; ones(obj.udim), zeros(obj.udim, 1);];
+            A = [A; eye(obj.udim), zeros(obj.udim, 1);];
             if size(obj.params.u_max, 1) == 1
                 b = [b; obj.params.u_max * ones(obj.udim, 1)];
             elseif size(obj.params.u_max, 1) == obj.udim
@@ -63,7 +63,7 @@ function [u, slack, B, V, feas, comp_time] = ctrlCbfClfQp(obj, x, u_ref, with_sl
             end
         end
         if isfield(obj.params, 'u_min')
-            A = [A; -ones(obj.udim), zeros(obj.udim, 1);];
+            A = [A; -eye(obj.udim), zeros(obj.udim, 1);];
             if size(obj.params.u_min, 1) == 1
                 b = [b; -obj.params.u_min * ones(obj.udim, 1)];
             elseif size(obj.params.u_min, 1) == obj.udim
@@ -79,7 +79,7 @@ function [u, slack, B, V, feas, comp_time] = ctrlCbfClfQp(obj, x, u_ref, with_sl
             LfB + obj.params.cbf.rate * B];                
         % Add input constraints if u_max or u_min exists.
         if isfield(obj.params, 'u_max')
-            A = [A; ones(obj.udim)];
+            A = [A; eye(obj.udim)];
             if size(obj.params.u_max, 1) == 1
                 b = [b; obj.params.u_max * ones(obj.udim, 1)];
             elseif size(obj.params.u_max, 1) == obj.udim
@@ -89,7 +89,7 @@ function [u, slack, B, V, feas, comp_time] = ctrlCbfClfQp(obj, x, u_ref, with_sl
             end
         end
         if isfield(obj.params, 'u_min')
-            A = [A; -ones(obj.udim)];
+            A = [A; -eye(obj.udim)];
             if size(obj.params.u_min, 1) == 1
                 b = [b; -obj.params.u_min * ones(obj.udim, 1)];
             elseif size(obj.params.u_min, 1) == obj.udim
