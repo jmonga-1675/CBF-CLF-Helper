@@ -82,14 +82,14 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         end
         
         function [y, dy, L2fy, LgLfy, phase] = eval_y(obj, s)
-            if isempty(obj.phase)
-                y = obj.y(s);
-                dy = obj.lf_y(s);
-                L2fy = obj.l2f_y(s);
-                LgLfy = obj.lglf_y(s);
-                phase = [];
-                return
-            end
+%             if isempty(obj.phase)
+%                 y = obj.y(s);
+%                 dy = obj.lf_y(s);
+%                 L2fy = obj.l2f_y(s);
+%                 LgLfy = obj.lglf_y(s);
+%                 phase = [];
+%                 return
+%             end
             phase = obj.phase(s);
             if phase > obj.params.phase_max
                 y = obj.y_max_exceed(s);
@@ -107,6 +107,10 @@ classdef CtrlAffineSysFL < CtrlAffineSys
                 L2fy = obj.l2f_y(s);
                 LgLfy = obj.lglf_y(s);
             end
+            y
+            dy
+            L2fy
+            LgLfy
         end
         
         %% Sym2Value Function
@@ -129,11 +133,6 @@ classdef CtrlAffineSysFL < CtrlAffineSys
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.phase(x) should be overriden by user.");
             end
-%             disp(nargin);
-%             if nargin < 2
-%                 phase_ = [];
-%                 return
-%             end
             phase_ = obj.phase_sym(x);
         end
         
@@ -237,7 +236,7 @@ classdef CtrlAffineSysFL < CtrlAffineSys
             y_min_exceed_ = obj.y_min_exceed_sym(x);
         end
         
-        function lf_y_min_exceed_ = lf_y_min_exceed(x)
+        function lf_y_min_exceed_ = lf_y_min_exceed(obj, x)
             % lg_cbf_ = lg_cbf(obj, x)
             % For 'built-in' setup, override this function with the
             % user-defined implementation of the lie derivative of the CBF L_g{B(x)}.
@@ -247,7 +246,7 @@ classdef CtrlAffineSysFL < CtrlAffineSys
             lf_y_min_exceed_ = obj.lf_y_min_exceed_sym(x);
         end
         
-        function lg_y_min_exceed_ = lg_y_min_exceed(x)
+        function lg_y_min_exceed_ = lg_y_min_exceed(obj, x)
             % lg_cbf_ = lg_cbf(obj, x)
             % For 'built-in' setup, override this function with the
             % user-defined implementation of the lie derivative of the CBF L_g{B(x)}.
@@ -257,7 +256,7 @@ classdef CtrlAffineSysFL < CtrlAffineSys
             lg_y_min_exceed_ = obj.lg_y_min_exceed_sym(x);
         end
         
-        function lglf_y_min_exceed_ = lglf_y_min_exceed(x)
+        function lglf_y_min_exceed_ = lglf_y_min_exceed(obj, x)
             % lg_cbf_ = lg_cbf(obj, x)
             % For 'built-in' setup, override this function with the
             % user-defined implementation of the lie derivative of the CBF L_g{B(x)}.
@@ -267,7 +266,7 @@ classdef CtrlAffineSysFL < CtrlAffineSys
             lglf_y_min_exceed_ = obj.lglf_y_min_exceed_sym(x);
         end
         
-        function l2f_y_min_exceed_ = l2f_y_min_exceed(x)
+        function l2f_y_min_exceed_ = l2f_y_min_exceed(obj, x)
             % lg_cbf_ = lg_cbf(obj, x)
             % For 'built-in' setup, override this function with the
             % user-defined implementation of the lie derivative of the CBF L_g{B(x)}.
