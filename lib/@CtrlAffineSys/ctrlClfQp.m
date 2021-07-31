@@ -1,5 +1,5 @@
 %% Author: Jason Choi (jason.choi@berkeley.edu)
-function [u, slack, V, feas, comp_time] = ctrlClfQp(obj, x, u_ref, with_slack, verbose)
+function [u, slack, Vs, feas, comp_time] = ctrlClfQp(obj, x, u_ref, with_slack, verbose)
     %% Implementation of vanilla CLF-QP
     % Inputs:   x: state
     %           u_ref: reference control input
@@ -35,62 +35,31 @@ function [u, slack, V, feas, comp_time] = ctrlClfQp(obj, x, u_ref, with_slack, v
     end
     
     tstart = tic;
-    V = obj.clf(x);
+    Vs = obj.clf(x);
     % Lie derivatives of the CLF.
-    LfV = obj.lf_clf(x);
-    LgV = obj.lg_clf(x);
+    LfVs = obj.lf_clf(x);
+    LgVs = obj.lg_clf(x);
 
     %% Constraints : A[u; slack] <= b
+    A = LgVs;
+    b = -LfVs - obj.clf_rate * Vs;
+    if ~isempty(obj.u_max)
+        A = [A; eye(obj.udim)];
+        b = [b; obj.u_max];
+    end
+    if ~isempty(obj.u_min)
+        A = [A; -eye(obj.udim)];
+        b = [b; -obj.u_min];
+    end
     if with_slack
-        % CLF constraint.
-        A = [LgV, -1];
-        b = -LfV-obj.params.clf.rate*V;                
-        % Add input constraints if u_max or u_min exists.
-        if isfield(obj.params, 'u_max')
-            A = [A; eye(obj.udim), zeros(obj.udim, 1);];
-            if size(obj.params.u_max, 1) == 1
-                b = [b; obj.params.u_max * ones(obj.udim, 1)];
-            elseif size(obj.params.u_max, 1) == obj.udim
-                b = [b; obj.params.u_max];
-            else
-                error("params.u_max should be either a scalar value or an (udim, 1) array.")
-            end
+        A_slack = -eye(obj.n_clf);
+        if ~isempty(obj.u_max)
+            A_slack = [A_slack; zeros(obj.udim, obj.n_clf)];
         end
-        if isfield(obj.params, 'u_min')
-            A = [A; -eye(obj.udim), zeros(obj.udim, 1);];
-            if size(obj.params.u_min, 1) == 1
-                b = [b; -obj.params.u_min * ones(obj.udim, 1)];
-            elseif size(obj.params.u_min, 1) == obj.udim
-                b = [b; -obj.params.u_min];
-            else
-                error("params.u_min should be either a scalar value or an (udim, 1) array")
-            end
-        end        
-    else
-        % CLF constraint.
-        A = LgV;
-        b = -LfV-obj.params.clf.rate*V;                
-        % Add input constraints if u_max or u_min exists.
-        if isfield(obj.params, 'u_max')
-            A = [A; eye(obj.udim)];
-            if size(obj.params.u_max, 1) == 1
-                b = [b; obj.params.u_max * ones(obj.udim, 1)];
-            elseif size(obj.params.u_max, 1) == obj.udim
-                b = [b; obj.params.u_max];
-            else
-                error("params.u_max should be either a scalar value or an (udim, 1) array.")
-            end
+        if ~isempty(obj.u_min)
+            A_slack = [A_slack; zeros(obj.udim, obj.n_clf)];
         end
-        if isfield(obj.params, 'u_min')
-            A = [A; -eye(obj.udim)];
-            if size(obj.params.u_min, 1) == 1
-                b = [b; -obj.params.u_min * ones(obj.udim, 1)];
-            elseif size(obj.params.u_min, 1) == obj.udim
-                b = [b; -obj.params.u_min];
-            else
-                error("params.u_min should be either a scalar value or an (udim, 1) array")
-            end
-        end
+        A = [A, A_slack];
     end
     
     %% Cost
@@ -114,23 +83,24 @@ function [u, slack, V, feas, comp_time] = ctrlClfQp(obj, x, u_ref, with_slack, v
     
     if with_slack         
         % cost = 0.5 [u' slack] H [u; slack] + f [u; slack]
-        H = [weight_input, zeros(obj.udim, 1);
-            zeros(1, obj.udim), obj.params.weight.slack];
-        f_ = [-weight_input * u_ref; 0];
+        H = [weight_input, zeros(obj.udim, obj.n_clf);
+            zeros(obj.n_clf, obj.udim), diag(obj.params.weight.slack)];
+        f_ = [-weight_input * u_ref; zeros(obj.n_clf, 1)];
         [u_slack, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2            
             feas = 0;
             disp("Infeasible QP. Numerical error might have occured.");
-            % Making up best-effort heuristic solution.
+            % Making up best-effort heuristic solution.            
             u = zeros(obj.udim, 1);
             for i = 1:obj.udim
-                u(i) = obj.params.u_min * (LgV(i) > 0) + obj.params.u_max * (LgV(i) <= 0);
+                u(i) = obj.u_min(i) * (LgVs(i) > 0) + obj.u_max(i) * (LgVs(i) <= 0);
             end
+            slack = zeros(obj.n_clf, 1);
         else
             feas = 1;
             u = u_slack(1:obj.udim);
+            slack = u_slack(obj.udim+1:end);
         end
-        slack = u_slack(end);
     else
         H = weight_input;
         f_ = -weight_input * u_ref;
@@ -141,7 +111,7 @@ function [u, slack, V, feas, comp_time] = ctrlClfQp(obj, x, u_ref, with_slack, v
             % Making up best-effort heuristic solution.
             u = zeros(obj.udim, 1);
             for i = 1:obj.udim
-                u(i) = obj.params.u_min * (LgV(i) > 0) + obj.params.u_max * (LgV(i) <= 0);
+                u(i) = obj.u_min(i) * (LgVs(i) > 0) + obj.u_max(i) * (LgVs(i) <= 0);
             end
         else
             feas = 1;

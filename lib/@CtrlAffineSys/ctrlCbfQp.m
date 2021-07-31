@@ -1,5 +1,5 @@
 %% Author: Jason Choi (jason.choi@berkeley.edu)
-function [u, B, feas, comp_time] = ctrlCbfQp(obj, x, u_ref, verbose)
+function [u, slack, Bs, feas, comp_time] = ctrlCbfQp(obj, x, u_ref, verbose, with_slack)
     %% Implementation of vanilla CBF-QP
     % Inputs:   x: state
     %           u_ref: reference control input
@@ -20,42 +20,41 @@ function [u, B, feas, comp_time] = ctrlCbfQp(obj, x, u_ref, verbose)
         % Run QP without log in default condition.
         verbose = 0;
     end
+    if nargin < 5
+        with_slack = obj.n_cbf > 1;
+    end
 
     if size(u_ref, 1) ~= obj.udim
         error("Wrong size of u_ref, it should be (udim, 1) array.");
     end                
             
     tstart = tic;
-    B = obj.cbf(x);
-    LfB = obj.lf_cbf(x);
-    LgB = obj.lg_cbf(x);
+    Bs = obj.cbf(x);
+    LfBs = obj.lf_cbf(x);
+    LgBs = obj.lg_cbf(x);
         
     %% Constraints : A * u <= b
     % CBF constraint.
-    A = [-LgB];
-    b = [LfB + obj.params.cbf.rate * B];                
-    % Add input constraints if u_max or u_min exists.
-    if isfield(obj.params, 'u_max')
+    A = -LgBs;
+    b = LfBs + obj.cbf_rate * Bs;
+    if ~isempty(obj.u_max)
         A = [A; eye(obj.udim)];
-        if size(obj.params.u_max, 1) == 1
-            b = [b; obj.params.u_max * ones(obj.udim, 1)];
-        elseif size(obj.params.u_max, 1) == obj.udim
-            b = [b; obj.params.u_max];
-        else
-            error("params.u_max should be either a scalar value or an (udim, 1) array.")
-        end
+        b = [b; obj.u_max];
     end
-    if isfield(obj.params, 'u_min')
+    if ~isempty(obj.u_min)
         A = [A; -eye(obj.udim)];
-        if size(obj.params.u_min, 1) == 1
-            b = [b; -obj.params.u_min * ones(obj.udim, 1)];
-        elseif size(obj.params.u_min, 1) == obj.udim
-            b = [b; -obj.params.u_min];
-        else
-            error("params.u_min should be either a scalar value or an (udim, 1) array")
-        end
+        b = [b; -obj.u_min];
     end
-
+    if with_slack
+        A_slack = -eye(obj.n_cbf);
+        if ~isempty(obj.u_max)
+            A_slack = [A_slack; zeros(obj.udim, obj.n_cbf)];
+        end
+        if ~isempty(obj.u_min)
+            A_slack = [A_slack; zeros(obj.udim, obj.n_cbf)];
+        end
+        A = [A, A_slack];
+    end
 
     %% Cost
     if isfield(obj.params.weight, 'input')
@@ -76,15 +75,34 @@ function [u, B, feas, comp_time] = ctrlCbfQp(obj, x, u_ref, verbose)
         options =  optimset('Display','off');
     end
 
-    % cost = 0.5 u' H u + f u
-    H = weight_input;
-    f_ = -weight_input * u_ref;
-    [u, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
-    if exitflag == -2
-        feas = 0;
-        disp("Infeasible QP. CBF constraint is conflicting with input constraints.");
+    if with_slack
+        % cost = 0.5 [u' slack] H [u; slack] + f [u; slack]
+        H = [weight_input, zeros(obj.udim, obj.n_cbf);
+            zeros(obj.n_cbf, obj.udim), diag(obj.params.weight.slack)];
+        f_ = [-weight_input * u_ref; zeros(obj.n_cbf, 1)];
+        [u_slack, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
+        if exitflag == -2            
+            feas = 0;
+            disp("Infeasible QP. Numerical error might have occured.");
+            u = zeros(obj.udim, 1);
+            slack = zeros(obj.n_clf, 1);
+        else
+            feas = 1;
+            u = u_slack(1:obj.udim);
+            slack = u_slack(obj.udim+1:end);
+        end
     else
-        feas = 1;
+        % cost = 0.5 u' H u + f u    
+        H = weight_input;
+        f_ = -weight_input * u_ref;
+        [u, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
+        if exitflag == -2
+            feas = 0;
+            disp("Infeasible QP. CBF constraint is conflicting with input constraints.");
+        else
+            feas = 1;
+        end
+        slack = [];
     end
     comp_time = toc(tstart);
 end
