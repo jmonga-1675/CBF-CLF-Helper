@@ -34,8 +34,8 @@ params.xdim = 3;
 params.udim = 1;
 
 %% Either option works.
-accSys = AccSymbolic(params);
-% accSys = AccBuiltIn(params);
+% accSys = AccSymbolic(params);
+accSys = AccBuiltIn(params);
 
 odeFun = @accSys.dynamics;
 controller = @accSys.ctrlCbfClfQp;

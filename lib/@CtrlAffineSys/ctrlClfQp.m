@@ -48,10 +48,11 @@ function [u, slack, V, feas, comp_time] = ctrlClfQp(obj, x, u_ref, with_slack, v
         % Add input constraints if u_max or u_min exists.
         if isfield(obj.params, 'u_max')
             A = [A; eye(obj.udim), zeros(obj.udim, 1);];
-            if size(obj.params.u_max, 1) == 1
+            if size(obj.params.u_max, 1) == 1 % u_max is in column_vector form
                 b = [b; obj.params.u_max * ones(obj.udim, 1)];
             elseif size(obj.params.u_max, 1) == obj.udim
                 b = [b; obj.params.u_max];
+            % Get no error when u_max = (u_dim, x != 1) => TODO
             else
                 error("params.u_max should be either a scalar value or an (udim, 1) array.")
             end

@@ -1,0 +1,19 @@
+%% Initialize Global Simulation Configuration of Rabbit
+global scale
+global a_bez theta_end theta_init
+global mu
+global uSat
+global apply_rl_adaptation
+global control_type
+global motor_dynamics
+
+motor_dynamics = 1;
+apply_rl_adaptation = 0;
+control_type = 1;  % 0: Original(Westervelt) 1: CLF-QP   2: L1-CLF-QP  3: RL-CLF-QP
+% IO-RL+CLF: apply_rl_adaptation=0, control_type=1
+uSat = 150;
+mu = 0.8; % friction constraint;
+theta_end = 3.384545423940834;
+theta_init = 2.903323878938605;
+a_bez = [2.42225522164138,2.50944978892455,2.66152682946601,2.78780950883388,2.88091497548752,2.94002391033518;0.667715484387163,0.638300798629787,0.490574595122909,0.478548440963253,0.473893838339675,0.576633115386526;2.94201463482336,2.99945422582175,2.85290119992043,2.52843337205465,2.42762552077273,2.44116379159792;0.575072495911993,0.635317622337650,1.13813693839107,1.22909640103678,1.00446628056820,0.717766128548961];
+scale = 2;

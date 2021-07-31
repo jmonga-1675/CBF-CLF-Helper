@@ -51,7 +51,6 @@ classdef CtrlAffineSys < handle
         %%      dynsys = CtrlAffineSys(params, 'symbolic')
         %% if user-defined dynamics, cbf, clf are used:
         %%      dynsys = CtrlAffineSys(params, 'built-in')
-            disp(setup_option);
             if nargin < 1
                 error("Warning: params argument is missing.")
             end

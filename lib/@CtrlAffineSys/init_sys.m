@@ -1,4 +1,8 @@
 function init_sys(obj, params)
+%% Functions that initilaize dynamic system
+% Built in
+    % implant the params' parameter to object's parameters
+    % ex) x_dim, u_dim, n_clf, n_cbf, clf_rate, cbf_rate ...
     obj.params = params;
 
     if strcmp(obj.setup_option, 'symbolic')
@@ -56,6 +60,8 @@ function init_sys(obj, params)
         end
         
     elseif strcmp(obj.setup_option, 'built-in')
+        % extract param information and inject to object's property
+        % xdim, udim, n_clf, n_cbf 
         if ~isfield(params, 'xdim')
             error("xdim should be specified for built-in setup.");
         end
@@ -84,6 +90,7 @@ function init_sys(obj, params)
     end
     
     %% Parse parameters for both setup_option.
+    % set cbf rate, clf rate
     if isfield(params, 'clf') && isfield(params.clf, 'rate')
         %% TODO: change this to params.clf_rate
         obj.clf_rate = params.clf.rate;
@@ -118,7 +125,7 @@ function init_sys(obj, params)
     if isfield(params, 'u_max')
         if length(params.u_max) == 1
             obj.u_max = params.u_max * ones(obj.udim, 1);
-        elseif length(params.u_max) ~= obj.umax
+        elseif length(params.u_max) ~= obj.umax % what?
             error("Invalid size of params.u_max.");
         else
             if isrow(params.u_max)

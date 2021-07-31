@@ -24,15 +24,17 @@ elseif obj.rel_deg_y == 2
 end
 
 u = u_raw;
+
+%% Clip input into the physical constraint
 if isfield(obj.params, 'u_max')
-    if size(obj.params.u_max, 1) == 1
+    if size(obj.params.u_max, 1) == 1 % row vector
         for i = 1:obj.udim
             if u(i) > obj.params.u_max
                 u(i) = obj.params.u_max;
                 disp("Warning: virtual control input does not satisfy input constraint.")
             end
         end
-    elseif size(obj.params.u_max, 1) == obj.udim
+    elseif size(obj.params.u_max, 1) == obj.udim % column vector
         for i = 1:obj.udim
             if u(i) > obj.params.u_max(i)
                 u(i) = obj.params.u_max(i);
