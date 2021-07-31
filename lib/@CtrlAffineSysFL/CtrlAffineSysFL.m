@@ -129,11 +129,11 @@ classdef CtrlAffineSysFL < CtrlAffineSys
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.phase(x) should be overriden by user.");
             end
-            disp(nargin);
-            if nargin < 2
-                phase_ = [];
-                return
-            end
+%             disp(nargin);
+%             if nargin < 2
+%                 phase_ = [];
+%                 return
+%             end
             phase_ = obj.phase_sym(x);
         end
         
@@ -204,7 +204,7 @@ classdef CtrlAffineSysFL < CtrlAffineSys
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.lg_y_max_exceed(x) should be overriden by user.");
             end
-            lg_y_max_exceed_ = obj.lglf_y_max_exceed_sym(x);
+            lg_y_max_exceed_ = obj.lg_y_max_exceed_sym(x);
         end
         
         function lglf_y_max_exceed_ = lglf_y_max_exceed(obj, x)
@@ -234,7 +234,7 @@ classdef CtrlAffineSysFL < CtrlAffineSys
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.y_min_exceed(x) should be overriden by user.");
             end
-            y_min_exceed_ = y_min_exceed_sym(x);
+            y_min_exceed_ = obj.y_min_exceed_sym(x);
         end
         
         function lf_y_min_exceed_ = lf_y_min_exceed(x)
@@ -244,7 +244,7 @@ classdef CtrlAffineSysFL < CtrlAffineSys
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.lf_y_min_exceed(x) should be overriden by user.");
             end
-            lf_y_min_exceed_ = lf_y_min_exceed_sym(x);
+            lf_y_min_exceed_ = obj.lf_y_min_exceed_sym(x);
         end
         
         function lg_y_min_exceed_ = lg_y_min_exceed(x)
@@ -254,7 +254,7 @@ classdef CtrlAffineSysFL < CtrlAffineSys
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.lg_y_min_exceed(x) should be overriden by user.");
             end
-            lg_y_min_exceed_ = lg_y_min_exceed_sym(x);
+            lg_y_min_exceed_ = obj.lg_y_min_exceed_sym(x);
         end
         
         function lglf_y_min_exceed_ = lglf_y_min_exceed(x)
@@ -264,7 +264,7 @@ classdef CtrlAffineSysFL < CtrlAffineSys
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.lglf_y_min_exceed(x) should be overriden by user.");
             end
-            lglf_y_min_exceed_ = lglf_y_min_exceed_sym(x);
+            lglf_y_min_exceed_ = obj.lglf_y_min_exceed_sym(x);
         end
         
         function l2f_y_min_exceed_ = l2f_y_min_exceed(x)
@@ -274,7 +274,7 @@ classdef CtrlAffineSysFL < CtrlAffineSys
             if strcmp(obj.setup_option, 'built-in')
                 error("For; 'built-in' setup_option, obj.l2f_y_min_exceed(x) should be overriden by user.");
             end
-            l2f_y_min_exceed_ = l2f_y_min_exceed_sym(x);
+            l2f_y_min_exceed_ = obj.l2f_y_min_exceed_sym(x);
         end   
     end
 end
