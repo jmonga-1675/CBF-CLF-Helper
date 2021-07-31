@@ -61,6 +61,60 @@ classdef RabbitBuiltIn < CtrlAffineSysFL
             m = obj.params.m;
             LgB = -(T + (v - v0) / (cd * g)) / m;
         end
+        
+        function y_ = y(obj, x)
+            % TODO: Rabbit's output
+        end
+        
+        function phase_ = phase(obj, x)
+            % TODO: Rabbit's phase
+        end
+        
+        function Lfy = lf_y(obj, x)
+            % TODO: Rabbit's lie derivate of Lfy
+        end
+        
+        function Lgy = lg_y(obj, x)
+            % TODO: Rabbit's lie derivative of Lgy
+        end
+        
+        function LgLfy = lglf_y(obj, x)
+            % TODO: Rabbit's lie derivative of LgLfy
+        end
+        
+        function L2fy = l2f_y(obj, x)
+            % TODO: Rabbit's lie derivative of L2fy
+        end
+        
+        function y_max_exceed_ = y_max_exceed(obj, x)
+        end
+        
+        function lf_y_max_exceed_ = lf_y_max_exceed(obj, x)
+        end
+        
+        function lg_y_max_exceed_ = lg_y_max_exceed(obj, x)
+        end
+        
+        function lglf_y_max_exceed_ = lglf_y_max_exceed(obj, x)
+        end
+        
+        function l2f_y_max_exceed_ = l2f_y_max_exceed(obj, x)
+        end
+        
+        function y_min_exceed_ = y_min_exceed(obj, x)
+        end
+        
+        function lf_y_min_exceed_ = lf_y_min_exceed(obj, x)
+        end
+        
+        function lg_y_min_exceed_ = lg_y_min_exceed(obj, x)
+        end
+        
+        function lglf_y_min_exceed_ = lglf_y_min_exceed(obj, x)
+        end
+        
+        function l2f_y_min_exceed_ = l2f_y_min_exceed(obj, x)
+        end
     end
 end
 

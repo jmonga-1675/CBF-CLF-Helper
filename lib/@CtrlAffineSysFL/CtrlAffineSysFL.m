@@ -82,6 +82,7 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         end
         
         function [y, dy, L2fy, LgLfy, phase] = eval_y(obj, s)
+            % Todo: interpret this and make it more robust!
 %             if isempty(obj.phase)
 %                 y = obj.y(s);
 %                 dy = obj.lf_y(s);
@@ -107,19 +108,17 @@ classdef CtrlAffineSysFL < CtrlAffineSys
                 L2fy = obj.l2f_y(s);
                 LgLfy = obj.lglf_y(s);
             end
-            y
-            dy
-            L2fy
-            LgLfy
         end
         
         %% Sym2Value Function
         % Help convenient use of function handlers regardless of built-in
         % and symbolic
+        % TODO: As relative degree increase, this way of coding would be
+        % inefficient. Other way to do this?
         function y_ = y(obj, x)
-            % lg_cbf_ = lg_cbf(obj, x)
+            % y_ = y(obj, x)
             % For 'built-in' setup, override this function with the
-            % user-defined implementation of the lie derivative of the CBF L_g{B(x)}.
+            % user-defined implementation of the y = h(x) instead of defineOutput.
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.y(x) should be overriden by user.");
             end
@@ -127,9 +126,9 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         end
         
         function phase_ = phase(obj, x)
-            % lg_cbf_ = lg_cbf(obj, x)
+            % phase_ = phase(obj, x)
             % For 'built-in' setup, override this function with the
-            % user-defined implementation of the lie derivative of the CBF L_g{B(x)}.
+            % user-defined implementation of the phase.
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.phase(x) should be overriden by user.");
             end
@@ -137,9 +136,10 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         end
         
         function lf_y_ = lf_y(obj, x)
-            % lg_cbf_ = lg_cbf(obj, x)
+            % lf_y_ = lf_y(obj, x)
             % For 'built-in' setup, override this function with the
-            % user-defined implementation of the lie derivative of the CBF L_g{B(x)}.
+            % user-defined implementation of the lie derivative of the
+            % L_f(y)
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.lf_y(x) should be overriden by user.");
             end
@@ -147,9 +147,9 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         end
         
         function lg_y_ = lg_y(obj, x)
-            % lg_cbf_ = lg_cbf(obj, x)
+            % lg_y_ = lg_y(obj, x)
             % For 'built-in' setup, override this function with the
-            % user-defined implementation of the lie derivative of the CBF L_g{B(x)}.
+            % user-defined implementation of the lie derivative of the L_g(y).
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.lg_y(x) should be overriden by user.");
             end
@@ -157,9 +157,9 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         end
         
         function lglf_y_ = lglf_y(obj, x)
-            % lg_cbf_ = lg_cbf(obj, x)
+            % lglf_y_ = lglf_y(obj, x)
             % For 'built-in' setup, override this function with the
-            % user-defined implementation of the lie derivative of the CBF L_g{B(x)}.
+            % user-defined implementation of the lie derivative of the L_g{L_f(y)}.
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.lglf_y(x) should be overriden by user.");
             end
@@ -167,9 +167,10 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         end
         
         function l2f_y_ = l2f_y(obj, x)
-            % lg_cbf_ = lg_cbf(obj, x)
+            % l2f_y_ = l2f_y(obj, x)
             % For 'built-in' setup, override this function with the
-            % user-defined implementation of the lie derivative of the CBF L_g{B(x)}.
+            % user-defined implementation of the lie derivative of the
+            % L2_f(y)
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.l2f_y(x) should be overriden by user.");
             end
@@ -177,9 +178,9 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         end
         
         function y_max_exceed_ = y_max_exceed(obj, x)
-            % lg_cbf_ = lg_cbf(obj, x)
+            % y_max_exceed_ = y_max_exceed(obj, x)
             % For 'built-in' setup, override this function with the
-            % user-defined implementation of the lie derivative of the CBF L_g{B(x)}.
+            % user-defined implementation of the y_max_exceed(x)
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.y_max_exceed(x) should be overriden by user.");
             end
@@ -187,9 +188,10 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         end
         
         function lf_y_max_exceed_ = lf_y_max_exceed(obj, x)
-            % lg_cbf_ = lg_cbf(obj, x)
+            % lf_y_max_exceed_ = lf_y_max_exceed(obj, x)
             % For 'built-in' setup, override this function with the
-            % user-defined implementation of the lie derivative of the CBF L_g{B(x)}.
+            % user-defined implementation of the lie derivative of the
+            % L_f(y_max_exceed)
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.lf_y_max_exceed(x) should be overriden by user.");
             end
@@ -197,9 +199,10 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         end
         
         function lg_y_max_exceed_ = lg_y_max_exceed(obj, x)
-            % lg_cbf_ = lg_cbf(obj, x)
+            % lg_y_max_exceed_ = lg_y_max_exceed(obj, x)
             % For 'built-in' setup, override this function with the
-            % user-defined implementation of the lie derivative of the CBF L_g{B(x)}.
+            % user-defined implementation of the lie derivative of the
+            % L_g(y_max_exceed)
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.lg_y_max_exceed(x) should be overriden by user.");
             end
@@ -207,7 +210,7 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         end
         
         function lglf_y_max_exceed_ = lglf_y_max_exceed(obj, x)
-            % lg_cbf_ = lg_cbf(obj, x)
+            % lglf_y_max_exceed_ = lglf_y_max_exceed(obj, x)
             % For 'built-in' setup, override this function with the
             % user-defined implementation of the lie derivative of the CBF L_g{B(x)}.
             if strcmp(obj.setup_option, 'built-in')
@@ -217,7 +220,7 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         end
         
         function l2f_y_max_exceed_ = l2f_y_max_exceed(obj, x)
-            % lg_cbf_ = lg_cbf(obj, x)
+            % l2f_y_max_exceed_ = l2f_y_max_exceed(obj, x)
             % For 'built-in' setup, override this function with the
             % user-defined implementation of the lie derivative of the CBF L_g{B(x)}.
             if strcmp(obj.setup_option, 'built-in')
@@ -227,7 +230,7 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         end
         
         function y_min_exceed_ = y_min_exceed(obj, x)
-            % lg_cbf_ = lg_cbf(obj, x)
+            % y_min_exceed_ = y_min_exceed(obj, x)
             % For 'built-in' setup, override this function with the
             % user-defined implementation of the lie derivative of the CBF L_g{B(x)}.
             if strcmp(obj.setup_option, 'built-in')
@@ -237,7 +240,7 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         end
         
         function lf_y_min_exceed_ = lf_y_min_exceed(obj, x)
-            % lg_cbf_ = lg_cbf(obj, x)
+            % lf_y_min_exceed_ = lf_y_min_exceed(obj, x)
             % For 'built-in' setup, override this function with the
             % user-defined implementation of the lie derivative of the CBF L_g{B(x)}.
             if strcmp(obj.setup_option, 'built-in')
@@ -247,7 +250,7 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         end
         
         function lg_y_min_exceed_ = lg_y_min_exceed(obj, x)
-            % lg_cbf_ = lg_cbf(obj, x)
+            % lg_y_min_exceed_ = lg_y_min_exceed(obj, x)
             % For 'built-in' setup, override this function with the
             % user-defined implementation of the lie derivative of the CBF L_g{B(x)}.
             if strcmp(obj.setup_option, 'built-in')
@@ -257,7 +260,7 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         end
         
         function lglf_y_min_exceed_ = lglf_y_min_exceed(obj, x)
-            % lg_cbf_ = lg_cbf(obj, x)
+            % lglf_y_min_exceed_ = lglf_y_min_exceed(obj, x)
             % For 'built-in' setup, override this function with the
             % user-defined implementation of the lie derivative of the CBF L_g{B(x)}.
             if strcmp(obj.setup_option, 'built-in')
@@ -267,7 +270,7 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         end
         
         function l2f_y_min_exceed_ = l2f_y_min_exceed(obj, x)
-            % lg_cbf_ = lg_cbf(obj, x)
+            % l2f_y_min_exceed_ = l2f_y_min_exceed(obj, x)
             % For 'built-in' setup, override this function with the
             % user-defined implementation of the lie derivative of the CBF L_g{B(x)}.
             if strcmp(obj.setup_option, 'built-in')

@@ -1,6 +1,7 @@
 function init_sys_FL(obj, params)
     %% Functions that initialize dynamic system
     obj.params = params;
+    %% Symbolic Function
     if strcmp(obj.setup_option, 'symbolic')
         disp(['Setting up feedback linearization dynamics, CLFs, CBFs from defined symbolic expressions.', ...
             '(This might take time.)']);
@@ -8,17 +9,18 @@ function init_sys_FL(obj, params)
         [y, phase, y_max_exceed, y_min_exceed] = obj.defineOutput(params, x);
         obj.initOutputDynamics(x, f, g, y, phase, y_max_exceed, y_min_exceed, params);
     
+    %% Non Symbolic Function
     elseif strcmp(obj.setup_option, 'built-in')
         if ~isfield(params, 'rel_deg_y')
             error("rel_deg_y should be specified for built-in setup.");
         end
         obj.rel_deg_y = params.rel_deg_y; % TODO: other way to judge it?
         obj.ydim = obj.udim;
-        
     else
         error("Undefined setup_option.");
     end
-    %% Set up desired linear output dynamics.
+    %% Set up desired linear output dynamics
+    %% Both Symbolic and Non-symbolic
     if ~isfield(params, 'epsilon_FL')
         error("Define variable in the params called 'epsilon_FL', which is the rate of RES-CLF");
     end
