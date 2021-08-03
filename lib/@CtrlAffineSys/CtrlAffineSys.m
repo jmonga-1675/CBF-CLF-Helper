@@ -128,7 +128,11 @@ classdef CtrlAffineSys < handle
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.clf(x) should be overriden by user.");                
             end
-            clf_ = obj.clf_sym(x);
+            clf_ = zeros(obj.n_clf, 1);
+            for i = 1:obj.n_clf
+                clf_i = obj.clf_sym{i}(x);
+                clf_(i) = clf_i;
+            end
         end
         
         function lf_clf_ = lf_clf(obj, x)
@@ -138,7 +142,11 @@ classdef CtrlAffineSys < handle
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.lf_clf(x) should be overriden by user.");
             end
-            lf_clf_ = obj.lf_clf_sym(x);
+            lf_clf_ = zeros(obj.n_clf, 1);
+            for i = 1:obj.n_clf               
+                lf_clf_i = obj.lf_clf_sym{i}(x);
+                lf_clf_(i) = lf_clf_i;
+            end
         end
         
         function lg_clf_ = lg_clf(obj, x)
@@ -148,7 +156,11 @@ classdef CtrlAffineSys < handle
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.lg_clf(x) should be overriden by user.");
             end
-            lg_clf_ = obj.lg_clf_sym(x);
+            lg_clf_ = zeros(obj.n_clf, obj.udim);
+            for i = 1:obj.n_clf
+                lg_clf_i = obj.lg_clf_sym{i}(x);
+                lg_clf_(i, :) = lg_clf_i;
+            end
         end
         
         function cbf_ = cbf(obj, x)
@@ -158,7 +170,11 @@ classdef CtrlAffineSys < handle
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.cbf(x) should be overriden by user.");                
             end
-            cbf_ = obj.cbf_sym(x);
+            cbf_ = zeros(obj.n_cbf, 1);
+            for i = 1:obj.n_cbf
+                cbf_i = obj.cbf_sym{i}(x);
+                cbf_(i) = cbf_i;
+            end
         end
         
         function lf_cbf_ = lf_cbf(obj, x)
@@ -168,7 +184,11 @@ classdef CtrlAffineSys < handle
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.lf_cbf(x) should be overriden by user.");
             end
-            lf_cbf_ = obj.lf_cbf_sym(x);
+            lf_cbf_ = zeros(obj.n_cbf, 1);
+            for i = 1:obj.n_cbf               
+                lf_cbf_i = obj.lf_cbf_sym{i}(x);
+                lf_cbf_(i) = lf_cbf_i;
+            end
         end
         
         function lg_cbf_ = lg_cbf(obj, x)
@@ -178,7 +198,11 @@ classdef CtrlAffineSys < handle
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.lg_cbf(x) should be overriden by user.");
             end
-            lg_cbf_ = obj.lg_cbf_sym(x);
+            lg_cbf_ = zeros(obj.n_cbf, obj.udim);
+            for i = 1:obj.n_cbf
+                lg_cbf_i = obj.lg_cbf_sym{i}(x);
+                lg_cbf_(i, :) = lg_cbf_i;
+            end
         end        
     end
 end

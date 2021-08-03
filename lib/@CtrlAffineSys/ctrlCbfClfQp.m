@@ -1,5 +1,5 @@
 %% Author: Jason Choi (jason.choi@berkeley.edu)
-function [u, slack, B, V, feas, comp_time] = ctrlCbfClfQp(obj, x, u_ref, with_slack, verbose)
+function [u, slack, Bs, Vs, feas, comp_time] = ctrlCbfClfQp(obj, x, u_ref, with_slack, verbose)
     %% Implementation of vanilla CBF-CLF-QP
     % Inputs:   x: state
     %           u_ref: reference control input
@@ -36,68 +36,46 @@ function [u, slack, B, V, feas, comp_time] = ctrlCbfClfQp(obj, x, u_ref, with_sl
     end                
 
     tstart = tic;
-    V = obj.clf(x);
-    LfV = obj.lf_clf(x);
-    LgV = obj.lg_clf(x);
+    Vs = obj.clf(x);
+    LfVs = obj.lf_clf(x);
+    LgVs = obj.lg_clf(x);
 
-    B = obj.cbf(x);
-    LfB = obj.lf_cbf(x);
-    LgB = obj.lg_cbf(x);
+    Bs = obj.cbf(x);
+    LfBs = obj.lf_cbf(x);
+    LgBs = obj.lg_cbf(x);
         
     %% Constraints: A[u; slack] <= b
+    % CLF and CBF constraints.
+    A = [LgVs; -LgBs];
+    b = [-LfVs - obj.clf_rate * Vs;
+        LfBs + obj.cbf_rate * Bs]; 
+    % Input constraints
+    if ~isempty(obj.u_max)
+        A = [A; eye(obj.udim)];
+        b = [b; obj.u_max];
+    end
+    if ~isempty(obj.u_min)
+        A = [A; -eye(obj.udim)];
+        b = [b; -obj.u_min];
+    end
     if with_slack
-        % CLF and CBF constraints.
-        A = [LgV, -1;
-        -LgB, 0];
-        b = [-LfV - obj.params.clf.rate * V;
-            LfB + obj.params.cbf.rate * B];                
-        % Add input constraints if u_max or u_min exists.
-        if isfield(obj.params, 'u_max')
-            A = [A; eye(obj.udim), zeros(obj.udim, 1);];
-            if size(obj.params.u_max, 1) == 1
-                b = [b; obj.params.u_max * ones(obj.udim, 1)];
-            elseif size(obj.params.u_max, 1) == obj.udim
-                b = [b; obj.params.u_max];
-            else
-                error("params.u_max should be either a scalar value or an (udim, 1) array.")
-            end
+        % n_slack(size of slack):
+        %   = n_clf if n_cbf=1 (Relaxing only the CLF constraints)
+        %   = (n_clf + n_cbf) if n_cbf >=1 (Relaxing all constraints)
+        if obj.n_cbf == 1
+            n_slack = obj.n_clf;
+            A_slack = [-eye(obj.n_clf); zeros(1, obj.n_clf)];
+        else
+            n_slack = obj.n_clf + obj.n_cbf;
+            A_slack = -eye(obj.n_clf + obj.n_cbf);
         end
-        if isfield(obj.params, 'u_min')
-            A = [A; -eye(obj.udim), zeros(obj.udim, 1);];
-            if size(obj.params.u_min, 1) == 1
-                b = [b; -obj.params.u_min * ones(obj.udim, 1)];
-            elseif size(obj.params.u_min, 1) == obj.udim
-                b = [b; -obj.params.u_min];
-            else
-                error("params.u_min should be either a scalar value or an (udim, 1) array")
-            end
-        end        
-    else
-        % CLF and CBF constraints.
-        A = [LgV; -LgB];
-        b = [-LfV - obj.params.clf.rate * V;
-            LfB + obj.params.cbf.rate * B];                
-        % Add input constraints if u_max or u_min exists.
-        if isfield(obj.params, 'u_max')
-            A = [A; eye(obj.udim)];
-            if size(obj.params.u_max, 1) == 1
-                b = [b; obj.params.u_max * ones(obj.udim, 1)];
-            elseif size(obj.params.u_max, 1) == obj.udim
-                b = [b; obj.params.u_max];
-            else
-                error("params.u_max should be either a scalar value or an (udim, 1) array.")
-            end
+        if ~isempty(obj.u_max)
+            A_slack = [A_slack; zeros(obj.udim, n_slack)];
         end
-        if isfield(obj.params, 'u_min')
-            A = [A; -eye(obj.udim)];
-            if size(obj.params.u_min, 1) == 1
-                b = [b; -obj.params.u_min * ones(obj.udim, 1)];
-            elseif size(obj.params.u_min, 1) == obj.udim
-                b = [b; -obj.params.u_min];
-            else
-                error("params.u_min should be either a scalar value or an (udim, 1) array")
-            end
+        if ~isempty(obj.u_min)
+            A_slack = [A_slack; zeros(obj.udim, n_slack)];
         end
+        A = [A, A_slack];
     end
 
     %% Cost
@@ -120,18 +98,21 @@ function [u, slack, B, V, feas, comp_time] = ctrlCbfClfQp(obj, x, u_ref, with_sl
     end
     if with_slack         
         % cost = 0.5 [u' slack] H [u; slack] + f [u; slack]
-        H = [weight_input, zeros(obj.udim, 1);
-            zeros(1, obj.udim), obj.params.weight.slack];
-        f_ = [-weight_input * u_ref; 0];
+        % TODO: refactor handling obj.params.weight.slack
+        H = [weight_input, zeros(obj.udim, n_slack);
+            zeros(n_slack, obj.udim), diag(obj.params.weight.slack)];
+        f_ = [-weight_input * u_ref; zeros(n_slack, 1)];
         [u_slack, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2
             feas = 0;
             disp("Infeasible QP. CBF constraint is conflicting with input constraints.");
+            u = zeros(obj.udim, 1);
+            slack = zeros(n_slack, 1);
         else
             feas = 1;
-        end
-        u = u_slack(1:obj.udim);
-        slack = u_slack(end);
+            u = u_slack(1:obj.udim);
+            slack = u_slack(obj.udim+1:end);
+        end        
     else
         % cost = 0.5 u' H u + f u
         H = weight_input;

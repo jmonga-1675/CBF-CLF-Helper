@@ -6,8 +6,15 @@ function cbf = defineCbf(~, params, symbolic_state)
     xo = params.xo;
     yo = params.yo;
     d = params.d;
-
-    distance = (p_x - xo)^2 + (p_y - yo)^2 - d^2;
-    derivDistance = 2*(p_x-xo)*v*cos(theta) + 2*(p_y-yo)*sin(theta);
-    cbf = derivDistance + params.cbf_gamma0 * distance; 
+    if length(yo) ~= length(xo) || length(d) ~= length(xo)
+        error("wrong obstacles' parameters")
+    end
+    
+    n_obstacles = length(xo);
+    cbf = cell(n_obstacles, 1);
+    for i = 1:n_obstacles
+        distance = (p_x - xo(i))^2 + (p_y - yo(i))^2 - d(i)^2;
+        derivDistance = 2*(p_x-xo(i))*v*cos(theta) + 2*(p_y-yo(i))*v*sin(theta);
+        cbf{i} = derivDistance + params.cbf_gamma0 * distance;
+    end
 end
