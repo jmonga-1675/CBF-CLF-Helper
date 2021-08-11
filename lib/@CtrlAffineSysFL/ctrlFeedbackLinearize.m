@@ -3,6 +3,7 @@ function [u, y, feedforward, u_raw] = ctrlFeedbackLinearize(obj, s, mu)
 % Inputs:   s: state
 %           mu: virtual control input
 % Outputs:  u: control input.
+% u = u_star + LgLf\mu
 y = obj.y(s);
 if obj.rel_deg_y == 1
     Lfy = obj.lf_y(s);

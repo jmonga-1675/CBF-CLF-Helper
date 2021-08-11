@@ -113,6 +113,7 @@ function [mu, slack, B, V, feas] = ctrlClfQpFL(obj, s, mu_ref, with_slack, verbo
         H = [weight_input, zeros(obj.udim, 1);
             zeros(1, obj.udim), obj.params.weight.slack];
         f_ = [-weight_input * mu_ref; 0];
+        
         [mu_slack, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2
             feas = 0;

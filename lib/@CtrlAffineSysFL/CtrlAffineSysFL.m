@@ -83,14 +83,14 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         
         function [y, dy, L2fy, LgLfy, phase] = eval_y(obj, s)
             % Todo: interpret this and make it more robust!
-%             if isempty(obj.phase)
-%                 y = obj.y(s);
-%                 dy = obj.lf_y(s);
-%                 L2fy = obj.l2f_y(s);
-%                 LgLfy = obj.lglf_y(s);
-%                 phase = [];
-%                 return
-%             end
+            if ~obj.use_phase
+                y = obj.y(s);
+                dy = obj.lf_y(s);
+                L2fy = obj.l2f_y(s);
+                LgLfy = obj.lglf_y(s);
+                phase = [];
+                return
+            end
             phase = obj.phase(s);
             if phase > obj.params.phase_max
                 y = obj.y_max_exceed(s);
@@ -128,7 +128,7 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         function phase_ = phase(obj, x)
             % phase_ = phase(obj, x)
             % For 'built-in' setup, override this function with the
-            % user-defined implementation of the phase.
+            % user-defined implementation of the phase
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.phase(x) should be overriden by user.");
             end

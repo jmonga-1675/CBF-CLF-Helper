@@ -30,7 +30,9 @@ classdef CtrlAffineSys < handle
         % variable's fields directly instead of the equivalent class variables
         % (when they exist) is not recommended.
         % (Always preferred to refer directly to the class properties.)
-        params 
+        params
+        config
+        use_phase
                
         %% Functions generated from symbolic expressions.
         % (Used when setup_option is 'symbolic'.)
@@ -63,7 +65,7 @@ classdef CtrlAffineSys < handle
                 setup_option = 'built-in';
             end
             obj.setup_option = setup_option;
-            obj.init_sys(params);            
+            obj.init_sys(params);
         end
         
         function [x, f, g] = defineSystem(obj, params)

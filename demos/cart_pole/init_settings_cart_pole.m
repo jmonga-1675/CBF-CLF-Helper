@@ -23,6 +23,8 @@ params.u_min = -u_bound;
 
 params.ratio_u_diff = 0;
 params.weight.slack = 1000;
+%params.weight.input = eye(params.udim); % tune this to allocate different
+%weight in each u coordinate
 params.clf.rate = 1;
 
 %% Feedback linearization specific params.

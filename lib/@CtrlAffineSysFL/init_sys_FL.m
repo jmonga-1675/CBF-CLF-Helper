@@ -1,6 +1,5 @@
 function init_sys_FL(obj, params)
     %% Functions that initialize dynamic system
-    obj.params = params;
     %% Symbolic Function
     if strcmp(obj.setup_option, 'symbolic')
         disp(['Setting up feedback linearization dynamics, CLFs, CBFs from defined symbolic expressions.', ...
@@ -55,7 +54,7 @@ function init_sys_FL(obj, params)
     obj.Gram_clf_FL = lyap(A', Q); % A'P+PA=Q, find P 
 
     if isfield(params, 'clf')
-        if ~isfield(params.clf, 'rate')
+        if ~isfield(params.clf, 'rate') || ~params.clf.use_user_defined_rate
             obj.params.clf.rate = min(eig(Q))/max(eig(obj.Gram_clf_FL))/eps;
             fprintf("Setting clf rate automatically to %.3f \n", obj.params.clf.rate);
         end
