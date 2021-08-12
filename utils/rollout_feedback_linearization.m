@@ -75,7 +75,7 @@ for k = 1:total_k-1
     % x_next = clip_theta(xs_k(end, :))';
     xs(k+1, :) = x_next;
     
-    % Recording Section: Evaluate CLF related values after one time step.
+    %% Recording Section: Evaluate CLF related values after one time step.
     % Record dVs_error(k) = dV - dV_hat
     %        Vs = V_next
     [y_next, dy_next, ~, ~, phase_next] = control_sys.eval_y(x_next);
@@ -93,6 +93,15 @@ for k = 1:total_k-1
 %     if abs(dV-dV_hat) > 50
 %         disp("debug");
 %     end
+%% Under examination
+    [F_st_u_next, F_st_nu_next] = plant_sys.get_force(x_next);
+    F_st_next = F_st_u_next*u + F_st_nu_next;
+    
+    plant_sys.y_out_history = [plant_sys.y_out_history; y_next'];
+    plant_sys.dy_out_history = [plant_sys.dy_out_history; dy_next'];
+    plant_sys.F_st_history = [plant_sys.F_st_history; F_st_next'];
+    plant_sys.u_motor_history = [plant_sys.u_motor_history; u'];
+    
     if verbose
         mu'
         fprintf("dV: %.4f \t dV_hat: %.4f \t dV-dV_hat: %.4f \t LfV: %.4f \t theta: %.4f \t dtheta: %.4f\n", ...

@@ -3,10 +3,27 @@
 % with Application to Adaptive Cruise Control, CDC 2014, Table 1.
 
 classdef RabbitBuiltIn < CtrlAffineSysFL
+    properties
+        F_st_history % stance foot horizontal force
+        y_out_history % output history
+        dy_out_history % output derivative history
+        u_motor_history % motor input history
+    end
     methods
         function obj = RabbitBuiltIn(params)
             % Always using built-in option for setup.
             obj = obj@CtrlAffineSysFL(params, 'built-in');
+            obj.F_st_history = [];
+            obj.y_out_history = [];
+            obj.dy_out_history = [];
+            obj.u_motor_history = [];
+        end
+        
+        function clear_properties(obj)
+            obj.F_st_history = [];
+            obj.y_out_history = [];
+            obj.dy_out_history = [];
+            obj.u_motor_history = [];
         end
         function f_ = f(obj, x)
             % RABBIT f(x)
@@ -21,7 +38,6 @@ classdef RabbitBuiltIn < CtrlAffineSysFL
             % RABBIT g(x)
             [~, g_] = obj.defineSystem(x);
         end
-        
         function B = cbf(obj, x)
             % TODO: CBF(x)
         end
