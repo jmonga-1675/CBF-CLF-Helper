@@ -28,7 +28,10 @@ function dict = init_clf_simulation_rabbit
     dict.udim = 4; % TODO hard-coding
     dict.rel_deg_y = 2;
     dict.use_phase = false;
+    
+    % Uncertainty term
     dict.scale = 1;
+    dict.torso_add = 0;
     
     %% Input options
     dict.uSat = 150;

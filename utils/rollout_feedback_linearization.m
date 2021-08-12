@@ -1,5 +1,5 @@
 function [xs, us, ts, Vs, dVs_error, ys] = rollout_feedback_linearization( ...
-    x0, t0, plant_sys, control_sys, controller, dt, sim_t, with_slack, mu0, verbose, event_func)
+    x0, t0, plant_sys, control_sys, controller, dt, sim_t, with_slack, mu0, verbose, event_options)
 % controller = CBF-CLF-QP
 if nargin < 7
     with_slack = 0;
@@ -17,7 +17,7 @@ if nargin < 9
 end
 
 if nargin < 10
-    event_func = []; % 0: no event function
+    event_options = []; % 0: no event function
 end
 
 % Total time step
@@ -63,11 +63,10 @@ for k = 1:total_k-1
     us(k, :) = u;
     
     % Run simulation for one time step with determined control input.
-    if isempty(event_func)
+    if isempty(event_options)
         [ts_k, xs_k] = ode45(@(t, s) plant_sys.dynamics(t, s, u), [t t+dt], x); %TODO => eventfunc!!
     else
-        options = odeset('Events', event_func);
-        [ts_k, xs_k, te, ~, ~] = ode45(@(t, s) plant_sys.dynamics(t, s, u), [t t+dt], x, options); %TODO => eventfunc!!
+        [ts_k, xs_k, te, ~, ~] = ode45(@(t, s) plant_sys.dynamics(t, s, u), [t t+dt], x, event_options); %TODO => eventfunc!!
     end
     
     t = ts_k(end);

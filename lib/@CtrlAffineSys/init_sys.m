@@ -109,15 +109,14 @@ function init_sys(obj, params)
         x_test = zeros(obj.xdim, 1);
         n_clf = 1;
         try
-            obj.clf(x_test);
+            clf_test = obj.clf(x_test);
         catch e
             n_clf = 0;
         end
         obj.n_clf = n_clf;
         n_cbf = 1;
         try
-            obj.cbf(x_test);
-            disp(obj.cbf(x_test));
+            cbf_test = obj.cbf(x_test);
         catch e
             n_cbf = 0;
         end
