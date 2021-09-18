@@ -1,6 +1,6 @@
 %% Author: Jason Choi (jason.choi@berkeley.edu)
-function [mu, slack, B, V, feas] = ctrlClfQpFL(obj, s, mu_ref, with_slack, verbose)
-    %% Implementation of CBF-CLF-QP under feedback linearization structure.
+function [mu, slack, V, feas] = ctrlClfQpFL(obj, s, mu_ref, with_slack, verbose)
+    %% Implementation of CLF-QP under feedback linearization structure.
     % Inputs:   s: state
     %           mu_ref: reference virtual control input
     %           with_slack: flag for relaxing the clf constraint(1: relax, 0: hard-constraint)
@@ -26,7 +26,7 @@ function [mu, slack, B, V, feas] = ctrlClfQpFL(obj, s, mu_ref, with_slack, verbo
         error("Wrong size of mu_ref, it should be (udim, 1) array.");
     end                
 
-    [y, dy, L2fy, LgLfy, phase] = obj.eval_y(s);
+    [y, dy, L2fy, LgLfy, ~] = obj.eval_y(s);
     
     V = obj.clf_FL(y, dy);
     LfV = obj.lF_clf_FL(y, dy);

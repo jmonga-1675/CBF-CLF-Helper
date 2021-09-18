@@ -17,6 +17,7 @@ classdef CtrlAffineSys < handle
                 
         % State dimension
         xdim 
+        sdim
         % Control input dimension
         udim
         % Number of clf in use
@@ -172,10 +173,12 @@ classdef CtrlAffineSys < handle
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.cbf(x) should be overriden by user.");                
             end
-            cbf_ = zeros(obj.n_cbf, 1);
+            %cbf_ = zeros(obj.n_cbf, 1);
+            cbf_ = [];
             for i = 1:obj.n_cbf
                 cbf_i = obj.cbf_sym{i}(x);
-                cbf_(i) = cbf_i;
+                %cbf_(i) = cbf_i;
+                cbf_ = [cbf_; cbf_i];
             end
         end
         

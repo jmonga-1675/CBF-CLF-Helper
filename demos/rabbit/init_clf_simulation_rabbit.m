@@ -46,7 +46,10 @@ function dict = init_clf_simulation_rabbit
     dict.clf.rate = 0.7;
     dict.clf.use_user_defined_rate = false; % set this to true if you don't want to use 
     
-    dict.epsilon_FL = 0.045; % tune this for controlling convergence rate
+    % Be careful when tuning this! Low epsilon induces high performance,
+    % but it can be too aggresive to disregard some physical limitations
+    % and unknown dynamics
+    dict.epsilon_FL = 0.07; % Keep it fixed! Fragile!
     dict.Kp_FL = 1;
     dict.Kd_FL = 1.8;
     
@@ -55,4 +58,7 @@ function dict = init_clf_simulation_rabbit
     % tune A and B to control the weight of each variable
     dict.weight.input = 1; % A (can be scalar or matrix)
     dict.weight.slack = 100; % B (should be scalar)
+    
+    %% Robot Fall Sensor
+    dict.fall_threshold = 0.699;
 end

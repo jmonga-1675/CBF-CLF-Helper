@@ -40,6 +40,7 @@ classdef CtrlAffineSysFL < CtrlAffineSys
             if nargin < 1
                 error("Warning: params argument is missing.")
             end
+            disp(setup_option)
             if nargin < 2
                 setup_option = 'symbolic';
             end

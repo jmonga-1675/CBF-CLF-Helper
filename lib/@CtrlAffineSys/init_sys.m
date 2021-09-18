@@ -30,6 +30,7 @@ function init_sys(obj, params)
         cbf_ = obj.defineCbf(params, x);
         % Setting state and input dimension.
         obj.xdim = size(x, 1);
+        obj.sdim = obj.xdim; % support past version, expedient
         obj.udim = size(g_, 2);
         obj.f_sym = matlabFunction(f_, 'vars', {x});
         obj.g_sym = matlabFunction(g_, 'vars', {x});
@@ -102,6 +103,7 @@ function init_sys(obj, params)
             error("xdim should be specified for built-in setup.");
         end
         obj.xdim = params.xdim;
+        obj.sdim = obj.xdim; % support past version, expedient
         if ~isfield(params, 'udim')
             error("udim should be specified for built-in setup.");
         end

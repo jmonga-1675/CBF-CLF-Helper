@@ -32,6 +32,9 @@ function init_sys_FL(obj, params)
                 eye(obj.ydim)];
 
     %% Set up CLF.
+    % In controlSysFL, CLF is automatically set, so obj.n_clf can be
+    % hard-coded to 1
+    obj.n_clf = 1;
     if ~isfield(params, 'Kp_FL')
         error("Define variable in the params called 'Kp_FL', p gain for RES-CLF");
     end

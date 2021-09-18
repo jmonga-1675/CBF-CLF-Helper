@@ -27,17 +27,18 @@ end
 u = u_raw;
 
 %% Clip input into the physical constraint
+eps = 1e-4;
 if isfield(obj.params, 'u_max')
     if size(obj.params.u_max, 1) == 1 % row vector
         for i = 1:obj.udim
-            if u(i) > obj.params.u_max
+            if u(i) > obj.params.u_max + eps
                 u(i) = obj.params.u_max;
                 disp("Warning: virtual control input does not satisfy input constraint.")
             end
         end
     elseif size(obj.params.u_max, 1) == obj.udim % column vector
         for i = 1:obj.udim
-            if u(i) > obj.params.u_max(i)
+            if u(i) > obj.params.u_max(i) + eps
                 u(i) = obj.params.u_max(i);
                 disp("Warning: virtual control input does not satisfy input constraint.")
             end    
@@ -50,14 +51,14 @@ end
 if isfield(obj.params, 'u_min')
     if size(obj.params.u_min, 1) == 1
         for i = 1:obj.udim
-            if u(i) < obj.params.u_min
+            if u(i) < obj.params.u_min - eps
                 u(i) = obj.params.u_min;
                 disp("Warning: virtual control input does not satisfy input constraint.")
             end
         end
     elseif size(obj.params.u_min, 1) == obj.udim
         for i = 1:obj.udim
-            if u(i) < obj.params.u_min(i)
+            if u(i) < obj.params.u_min(i) - eps
                 u(i) = obj.params.u_min(i);
                 disp("Warning: virtual control input does not satisfy input constraint.")
             end    
