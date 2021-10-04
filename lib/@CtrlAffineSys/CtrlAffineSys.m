@@ -33,7 +33,6 @@ classdef CtrlAffineSys < handle
         % (Always preferred to refer directly to the class properties.)
         params
         config
-        use_phase
                
         %% Functions generated from symbolic expressions.
         % (Used when setup_option is 'symbolic'.)
@@ -54,6 +53,19 @@ classdef CtrlAffineSys < handle
         %%      dynsys = CtrlAffineSys(params, 'symbolic')
         %% if user-defined dynamics, cbf, clf are used:
         %%      dynsys = CtrlAffineSys(params, 'built-in')
+        % params: dictionary of necessary parameters to define the dynsys
+        %   you can pass the model parameters you want to use to define
+        %   the dynamics, together with the below fields that is necessary
+        %   to support the functionality of the library.
+        % Necessary fields:
+        %   clf_rate / clf.rate: rate for the clf constraint.
+        %   cbf_rate / cbf.rate: rate for the cbf constraint.
+        % for the 'built-in' option:
+        %   xdim: state dimension
+        %   udim: control input dimension
+        % Optional fields:
+        %   u_min: control min bound (scalar, or the vector of size u_min)
+        %   u_max: control max bound        
             if nargin < 1
                 error("Warning: params argument is missing.")
             end
@@ -103,7 +115,7 @@ classdef CtrlAffineSys < handle
         end
         
         function f_ = f(obj, x)
-        % f_ = f(obj, x)
+        % f_ = obj.f(x)
         % For 'built-in' setup, override this function with the
         % user-defined implementation of f(x).
         % Autonomous vector fields (or drift).
@@ -114,7 +126,7 @@ classdef CtrlAffineSys < handle
         end
         
         function g_ = g(obj, x)
-        % g_ = g(obj, x)
+        % g_ = obj.g(x)
         % For 'built-in' setup, override this function with the
         % user-defined implementation of g(x).
         % Control vector fields (or actuation effect).
@@ -124,89 +136,93 @@ classdef CtrlAffineSys < handle
             g_ = obj.g_sym(x);
         end
         
-        function clf_ = clf(obj, x)
-        % clf_ = clf(obj, x)
+        function Vs = clf(obj, x)
+        % Vs = obj.clf(x)
         % For 'built-in' setup, override this function with the
         % user-defined implementation of the Control Lyapunov Function V(x).
+        % Vs:  (size: (obj.n_clf, 1))
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.clf(x) should be overriden by user.");                
             end
-            clf_ = zeros(obj.n_clf, 1);
+            Vs = zeros(obj.n_clf, 1);
             for i = 1:obj.n_clf
                 clf_i = obj.clf_sym{i}(x);
-                clf_(i) = clf_i;
+                Vs(i) = clf_i;
             end
         end
         
-        function lf_clf_ = lf_clf(obj, x)
-        % lf_clf_ = lf_clf(obj, x)
+        function LfVs = lf_clf(obj, x)
+        % LfVs = obj.lf_clf(x)
         % For 'built-in' setup, override this function with the
         % user-defined implementation of the lie derivative of the CLF L_f{V(x)}.
+        % LfVs:  (size: (obj.n_clf, 1))
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.lf_clf(x) should be overriden by user.");
             end
-            lf_clf_ = zeros(obj.n_clf, 1);
+            LfVs = zeros(obj.n_clf, 1);
             for i = 1:obj.n_clf               
                 lf_clf_i = obj.lf_clf_sym{i}(x);
-                lf_clf_(i) = lf_clf_i;
+                LfVs(i) = lf_clf_i;
             end
         end
         
-        function lg_clf_ = lg_clf(obj, x)
-        % lg_clf_ = lg_clf(obj, x)
+        function LgVs = lg_clf(obj, x)
+        % LgVs = obj.lg_clf(x)
         % For 'built-in' setup, override this function with the
         % user-defined implementation of the lie derivative of the CLF L_g{V(x)}.
+        % LgVs:  (size: (obj.n_clf, obj.udim))        
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.lg_clf(x) should be overriden by user.");
             end
-            lg_clf_ = zeros(obj.n_clf, obj.udim);
+            LgVs = zeros(obj.n_clf, obj.udim);
             for i = 1:obj.n_clf
                 lg_clf_i = obj.lg_clf_sym{i}(x);
-                lg_clf_(i, :) = lg_clf_i;
+                LgVs(i, :) = lg_clf_i;
             end
         end
         
-        function cbf_ = cbf(obj, x)
-        % cbf_ = cbf(obj, x)
+        function Bs = cbf(obj, x)
+        % Bs = obj.cbf(x)
         % For 'built-in' setup, override this function with the
         % user-defined implementation of the Control Barrier Function B(x).
+        % Bs: (size: (obj.n_cbf, 1))
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.cbf(x) should be overriden by user.");                
             end
-            %cbf_ = zeros(obj.n_cbf, 1);
-            cbf_ = [];
+            Bs = zeros(obj.n_cbf, 1);
             for i = 1:obj.n_cbf
                 cbf_i = obj.cbf_sym{i}(x);
-                %cbf_(i) = cbf_i;
-                cbf_ = [cbf_; cbf_i];
+                Bs(i) = cbf_i;
             end
         end
         
-        function lf_cbf_ = lf_cbf(obj, x)
-        % lf_cbf_ = lf_cbf(obj, x)
+        function LfBs = lf_cbf(obj, x)
+        % LfBs = obj.lf_cbf(x)
         % For 'built-in' setup, override this function with the
         % user-defined implementation of the lie derivative of the CBF L_f{B(x)}.
+        % LfBs: (size: (obj.n_cbf, 1))
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.lf_cbf(x) should be overriden by user.");
             end
-            lf_cbf_ = zeros(obj.n_cbf, 1);
+            LfBs = zeros(obj.n_cbf, 1);
             for i = 1:obj.n_cbf               
                 lf_cbf_i = obj.lf_cbf_sym{i}(x);
-                lf_cbf_(i) = lf_cbf_i;
+                LfBs(i) = lf_cbf_i;
             end
         end
         
-        function lg_cbf_ = lg_cbf(obj, x)
-        % lg_cbf_ = lg_cbf(obj, x)
+        function LgBs = lg_cbf(obj, x)
+        % LgBs = obj.lg_cbf(x)
         % For 'built-in' setup, override this function with the
         % user-defined implementation of the lie derivative of the CBF L_g{B(x)}.
+        % LgBs: (size: (obj.n_cbf, obj.udim))
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.lg_cbf(x) should be overriden by user.");
             end
-            lg_cbf_ = zeros(obj.n_cbf, obj.udim);
+            LgBs = zeros(obj.n_cbf, obj.udim);
             for i = 1:obj.n_cbf
                 lg_cbf_i = obj.lg_cbf_sym{i}(x);
-                lg_cbf_(i, :) = lg_cbf_i;
+                LgBs(i, :) = lg_cbf_i;
             end
         end        
     end

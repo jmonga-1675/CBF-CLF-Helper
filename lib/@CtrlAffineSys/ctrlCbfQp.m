@@ -1,11 +1,13 @@
 %% Author: Jason Choi (jason.choi@berkeley.edu)
-function [u, slack, Bs, feas, comp_time] = ctrlCbfQp(obj, x, u_ref, verbose, with_slack)
+function [u, extraout] = ctrlCbfQp(obj, x, u_ref, verbose, with_slack)
     %% Implementation of vanilla CBF-QP
     % Inputs:   x: state
     %           u_ref: reference control input
     %           verbose: flag for logging (1: print log, 0: run silently)
     % Outputs:  u: control input as a solution of the CBF-CLF-QP
-    %           B: Value of the CBF at current state.
+    %   extraout:
+    %           slack: slack variable for relaxation. (empty when with_slack=0)
+    %           Bs: CBF values at current state.
     %           feas: 1 if QP is feasible, 0 if infeasible. (Note: even
     %           when qp is infeasible, u is determined from quadprog.)
     %           compt_time: computation time to run the solver.
@@ -105,4 +107,9 @@ function [u, slack, Bs, feas, comp_time] = ctrlCbfQp(obj, x, u_ref, verbose, wit
         slack = [];
     end
     comp_time = toc(tstart);
+    
+    extraout.slack = slack;
+    extraout.Bs = Bs;
+    extraout.feas = feas;
+    extraout.comp_time = comp_time;
 end

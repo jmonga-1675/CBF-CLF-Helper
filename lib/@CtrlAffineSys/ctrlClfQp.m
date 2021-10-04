@@ -1,13 +1,14 @@
 %% Author: Jason Choi (jason.choi@berkeley.edu)
-function [u, slack, Vs, feas, comp_time] = ctrlClfQp(obj, x, u_ref, with_slack, verbose)
-    %% Implementation of vanilla CLF-QP
+function [u, extraout] = ctrlClfQp(obj, x, u_ref, with_slack, verbose)
+    %% Implementation of the vanilla CLF-QP
     % Inputs:   x: state
     %           u_ref: reference control input
     %           with_slack: flag for relaxing (1: relax, 0: hard CLF constraint)
     %           verbose: flag for logging (1: print log, 0: run silently)
     % Outputs:  u: control input as a solution of the CLF-QP
-    %           slack: slack variable for relaxation. (empty list when with_slack=0)
-    %           V: Value of the CLF at the current state.
+    %   extraout:
+    %           slack: slack variable for relaxation. (empty when with_slack=0)
+    %           Vs: CLF values at the current state.
     %           feas: 1 if QP is feasible, 0 if infeasible. (Note: even
     %           when qp is infeasible, u is determined from quadprog.)
     %           comp_time: computation time to run the solver.
@@ -119,4 +120,9 @@ function [u, slack, Vs, feas, comp_time] = ctrlClfQp(obj, x, u_ref, with_slack, 
         slack = [];
     end
     comp_time = toc(tstart);
+    
+    extraout.slack = slack;
+    extraout.Vs = Vs;
+    extraout.feas = feas;
+    extraout.comp_time = comp_time;
 end

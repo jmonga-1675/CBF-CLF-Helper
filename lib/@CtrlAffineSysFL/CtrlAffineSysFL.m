@@ -31,6 +31,9 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         lglf_y_min_exceed_sym
         l2f_y_min_exceed_sym        
         
+        % binary indicator on whether it uses phase-based output or not.
+        use_phase        
+        
         % CLF under feedback linearization and its derivatives as function handles.
         Gram_clf_FL % Gram matrix of the CLF for feedback linearization.
     end

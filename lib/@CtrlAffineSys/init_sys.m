@@ -4,13 +4,7 @@ function init_sys(obj, params)
     % implant the params' parameter to object's parameters
     % ex) x_dim, u_dim, n_clf, n_cbf, clf_rate, cbf_rate ...
     obj.params = params;
-    
-    if ~isfield(params, 'use_phase')
-        obj.use_phase = 1;    
-    else
-        obj.use_phase = params.use_phase;
-    end
-    
+        
     if strcmp(obj.setup_option, 'symbolic')
         disp(['Setting up the dynamics, CLFs, CBFs from defined symbolic expressions.', ...
             '(This might take time.)']);

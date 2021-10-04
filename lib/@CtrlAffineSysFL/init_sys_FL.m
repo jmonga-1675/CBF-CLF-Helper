@@ -1,5 +1,11 @@
 function init_sys_FL(obj, params)
-    %% Functions that initialize dynamic system
+%% Functions that initialize dynamic system
+    if ~isfield(params, 'use_phase')
+        obj.use_phase = 1;    
+    else
+        obj.use_phase = params.use_phase;
+    end
+
     %% Symbolic Function
     if strcmp(obj.setup_option, 'symbolic')
         disp(['Setting up feedback linearization dynamics, CLFs, CBFs from defined symbolic expressions.', ...
