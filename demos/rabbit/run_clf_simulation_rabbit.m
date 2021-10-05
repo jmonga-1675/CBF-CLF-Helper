@@ -24,20 +24,6 @@ nstep = 10; % number of steps
 with_slack = true; % use slack variable in QP (change this into false in order not to use it)
 verbose = false; % show the QP-solving process
 
-%% Initialize state
-% Init state.
-q0_ini = params.legacy.q0_ini;
-dq0_ini = params.legacy.dq0_ini;
-x0 = [q0_ini;dq0_ini];
-% Relabeling matrix (reset map)
-R = [1, 0, 0, 0, 0, 0, 0;
-     0, 1, 0, 0, 0, 0, 0;
-     0, 0, 1, 0, 0, 0, 0;
-     0, 0, 0, 0, 0, 1, 0;
-     0, 0, 0, 0, 0, 0, 1;
-     0, 0, 0, 1, 0, 0, 0;
-     0, 0, 0, 0, 1, 0, 0];
-
 %% Prepare System (Uncertainty control)
 control_sys = RabbitBuiltIn(params);
 plant_sys = RabbitBuiltIn(params);
@@ -46,41 +32,25 @@ plant_sys = RabbitBuiltIn(params);
 plant_sys.params.scale = 1.5;
 %plant_sys.params.torso_add = 10;
 
-controller = @control_sys.ctrlClfQpFL;
-event_options = odeset('Events', @plant_sys.rabbit_event);
+controller = @control_sys.ctrlClfQpFL; % controller
+event_options = odeset('Events', @plant_sys.rabbit_event); % contact detector
+reset_map_function = @plant_sys.reset_map; % reset mapper
 
-%% Prepare record paper
-xs = [];
-ts = [];
-us = [];
-extras = [];
-
-% Initialize the state and time
+%% Initialize state
+% Init state.
+q0_ini = params.legacy.q0_ini;
+dq0_ini = params.legacy.dq0_ini;
+x0 = [q0_ini;dq0_ini];
 x = x0;
 t0 = 0;
+
 %% Main Simulation
-for k = 1:nstep
-    step_summary = strcat("[Step]", num2str(k)); disp(step_summary);
-    
-    [xs_new, us_new, ts_new, extras_new] = rollout_controller_eval_clf_FL( ...
-    x0, t0, plant_sys, control_sys, controller, dt, ...,
-    'event_options', event_options, 'sim_t', sim_t, 'with_slack', with_slack, ...,
-    'verbose', verbose);
-    
-    % Reset Map when event is detected
-    n = plant_sys.params.xdim/2;
-    q = R * xs_new(end, 1:n)';
-    dq = R*plant_sys.dq_pos_gen_v2([xs_new(end, 1:n) xs_new(end, n+1:2*n)]);
-    
-    % Renew the new state
-    x0 = [q; dq];
-    t0 = ts_new(end);
-    
-    ts = [ts; ts_new(1:end-1)];
-    xs = [xs; xs_new(1:end-1, :)];
-    us = [us; us_new];
-    extras = [extras; extras_new];
-end
+% rollout_controller_with_contact_version(for hybrid system)
+[xs, us, ts, extras] = rollout_controller_with_contact(...
+    x0, plant_sys, control_sys, controller, dt, ...
+    event_options, reset_map_function, nstep,...
+    'with_slack', with_slack, 'verbose', verbose);
+
 %% Plot the result
 % TODO: tune the plot setting into new version 
 plot_rabbit_result(xs, ts, us, extras);

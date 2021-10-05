@@ -4,26 +4,18 @@
 
 classdef RabbitBuiltIn < CtrlAffineSysFL
     properties
-        F_st_history % stance foot horizontal force
-        y_out_history % output history
-        dy_out_history % output derivative history
-        u_motor_history % motor input history
+        reset_map_matrix = [1, 0, 0, 0, 0, 0, 0;
+                             0, 1, 0, 0, 0, 0, 0;
+                             0, 0, 1, 0, 0, 0, 0;
+                             0, 0, 0, 0, 0, 1, 0;
+                             0, 0, 0, 0, 0, 0, 1;
+                             0, 0, 0, 1, 0, 0, 0;
+                             0, 0, 0, 0, 1, 0, 0];
     end
     methods
         function obj = RabbitBuiltIn(params)
             % Always using built-in option for setup.
             obj = obj@CtrlAffineSysFL(params, 'built-in');
-            obj.F_st_history = [];
-            obj.y_out_history = [];
-            obj.dy_out_history = [];
-            obj.u_motor_history = [];
-        end
-        
-        function clear_properties(obj)
-            obj.F_st_history = [];
-            obj.y_out_history = [];
-            obj.dy_out_history = [];
-            obj.u_motor_history = [];
         end
         
         function [f, g] = defineDynamics(obj, x)
