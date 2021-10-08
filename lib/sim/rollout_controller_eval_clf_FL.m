@@ -11,6 +11,7 @@ function [xs, us, ts, extras] = rollout_controller_eval_clf_FL( ...
     % sim_t = simulation time
     
 settings = parse_function_args(varargin{:});
+
 if ~isfield(settings, 'with_slack')
     with_slack = 0;
 else

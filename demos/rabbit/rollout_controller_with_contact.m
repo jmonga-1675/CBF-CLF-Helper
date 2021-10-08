@@ -6,9 +6,9 @@ function [xs, us, ts, extras] = rollout_controller_with_contact(...
 %   encompass well
 %   Input
 %       Necessary
-%           nstep: number of contacts
-%           event: function handle that detect the contact
+%           event_options: function handle that detect the contact
 %           reset_map_function: reset the state after detection of the contact
+%           nstep: number of contacts
 %       Default
 %           varargin: with_slack, mu0, verbose, event_options
 %

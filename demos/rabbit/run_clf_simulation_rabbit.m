@@ -8,7 +8,7 @@ close all; clear all; clc;
 % This is only designed for enabling animation of bipedal walker
 global animation_scale 
 
-%% Set Parameters
+%% Step 1. Set Simulation Setting and System-parameters
 % Simulation Setting
     % sim_t: overall simulation time: do not need it in this mode actually
     % dt: time interval to collect data used for plot/animation
@@ -24,11 +24,11 @@ nstep = 10; % number of steps
 with_slack = true; % use slack variable in QP (change this into false in order not to use it)
 verbose = false; % show the QP-solving process
 
-%% Prepare System (Uncertainty control)
+%% Step 2. Prepare System (Uncertainty control)
 control_sys = RabbitBuiltIn(params);
 plant_sys = RabbitBuiltIn(params);
 
-% Reflect model uncertainty here
+%% Reflect model uncertainty here
 plant_sys.params.scale = 1.5;
 %plant_sys.params.torso_add = 10;
 
@@ -36,7 +36,7 @@ controller = @control_sys.ctrlClfQpFL; % controller
 event_options = odeset('Events', @plant_sys.rabbit_event); % contact detector
 reset_map_function = @plant_sys.reset_map; % reset mapper
 
-%% Initialize state
+%% Step 3. Initialize state
 % Init state.
 q0_ini = params.legacy.q0_ini;
 dq0_ini = params.legacy.dq0_ini;
@@ -44,18 +44,18 @@ x0 = [q0_ini;dq0_ini];
 x = x0;
 t0 = 0;
 
-%% Main Simulation
+%% Step 4. Main Simulation
 % rollout_controller_with_contact_version(for hybrid system)
 [xs, us, ts, extras] = rollout_controller_with_contact(...
     x0, plant_sys, control_sys, controller, dt, ...
     event_options, reset_map_function, nstep,...
     'with_slack', with_slack, 'verbose', verbose);
 
-%% Plot the result
+%% Step 5. Plot the result
 % TODO: tune the plot setting into new version 
 plot_rabbit_result(xs, ts, us, extras);
 
-%% Five Link Animation
+%% Step 6. Five Link Animation
 animation_scale = plant_sys.params.scale;
 animation_dt = 0.05;
 x_quan_vec = coordinateTransformation(xs);
