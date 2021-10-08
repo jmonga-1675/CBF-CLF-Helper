@@ -1,16 +1,18 @@
-%% Author: Jason Choi (jason.choi@berkeley.edu)
 function [u, extraout] = ctrlCbfQp(obj, x, u_ref, verbose, with_slack)
-    %% Implementation of vanilla CBF-QP
-    % Inputs:   x: state
-    %           u_ref: reference control input
-    %           verbose: flag for logging (1: print log, 0: run silently)
-    % Outputs:  u: control input as a solution of the CBF-CLF-QP
-    %   extraout:
-    %           slack: slack variable for relaxation. (empty when with_slack=0)
-    %           Bs: CBF values at current state.
-    %           feas: 1 if QP is feasible, 0 if infeasible. (Note: even
-    %           when qp is infeasible, u is determined from quadprog.)
-    %           compt_time: computation time to run the solver.
+%% [u, extraout] = ctrlCbfQp(obj, x, u_ref, verbose, with_slack)
+%% Implementation of vanilla CBF-QP
+% Inputs:   x: state
+%           u_ref: reference control input
+%           verbose: flag for logging (1: print log, 0: run silently)
+% Outputs:  u: control input as a solution of the CBF-CLF-QP
+%   extraout:
+%           slack: slack variable for relaxation. (empty when with_slack=0)
+%           Bs: CBF values at current state.
+%           feas: 1 if QP is feasible, 0 if infeasible. (Note: even
+%           when qp is infeasible, u is determined from quadprog.)
+%           compt_time: computation time to run the solver.
+% Author: Jason Choi (jason.choi@berkeley.edu)
+
     if obj.n_cbf == 0
         error('CBF is not set up so ctrlCbfQp cannot be used.');
     end

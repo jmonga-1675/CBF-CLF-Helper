@@ -1,18 +1,18 @@
-%% Author: Jason Choi (jason.choi@berkeley.edu)
 function [u, extraout] = ctrlClfQp(obj, x, u_ref, with_slack, verbose)
-    %% Implementation of the vanilla CLF-QP
-    % Inputs:   x: state
-    %           u_ref: reference control input
-    %           with_slack: flag for relaxing (1: relax, 0: hard CLF constraint)
-    %           verbose: flag for logging (1: print log, 0: run silently)
-    % Outputs:  u: control input as a solution of the CLF-QP
-    %   extraout:
-    %           slack: slack variable for relaxation. (empty when with_slack=0)
-    %           Vs: CLF values at the current state.
-    %           feas: 1 if QP is feasible, 0 if infeasible. (Note: even
-    %           when qp is infeasible, u is determined from quadprog.)
-    %           comp_time: computation time to run the solver.
-
+%% [u, extraout] = ctrlClfQp(obj, x, u_ref, with_slack, verbose)
+%% Implementation of the vanilla CLF-QP
+% Inputs:   x: state
+%           u_ref: reference control input
+%           with_slack: flag for relaxing (1: relax, 0: hard CLF constraint)
+%           verbose: flag for logging (1: print log, 0: run silently)
+% Outputs:  u: control input as a solution of the CLF-QP
+%   extraout:
+%           slack: slack variable for relaxation. (empty when with_slack=0)
+%           Vs: CLF values at the current state.
+%           feas: 1 if QP is feasible, 0 if infeasible. (Note: even
+%           when qp is infeasible, u is determined from quadprog.)
+%           comp_time: computation time to run the solver.
+% Author: Jason Choi (jason.choi@berkeley.edu)
     if obj.n_clf == 0
         error('CLF is not set up so ctrlClfQp cannot be used.');
     end

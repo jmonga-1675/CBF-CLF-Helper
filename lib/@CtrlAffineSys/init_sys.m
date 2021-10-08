@@ -144,7 +144,7 @@ function init_sys(obj, params)
     if isfield(params, 'u_min')
         if length(params.u_min) == 1
             obj.u_min = params.u_min * ones(obj.udim, 1);
-        elseif length(params.u_min) ~= obj.umin
+        elseif length(params.u_min) ~= obj.udim
             error("Invalid size of params.u_min.");
         else
             if isrow(params.u_min)
@@ -157,7 +157,7 @@ function init_sys(obj, params)
     if isfield(params, 'u_max')
         if length(params.u_max) == 1
             obj.u_max = params.u_max * ones(obj.udim, 1);
-        elseif length(params.u_max) ~= obj.umax % what?
+        elseif length(params.u_max) ~= obj.udim
             error("Invalid size of params.u_max.");
         else
             if isrow(params.u_max)

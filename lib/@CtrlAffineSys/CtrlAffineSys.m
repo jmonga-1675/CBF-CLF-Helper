@@ -110,7 +110,9 @@ classdef CtrlAffineSys < handle
         % dx = obj.dynamics(t, x, u)
         % Control-Affine Dynamics: xdot = f(x) + g(x) u
         % Inputs: t: time, x: state, u: control input
-        % Output: dx: \dot(x)
+        %   x can be multiple element (size: (xdim, n_element))
+        %   u can be multiple element (size: (udim, n_element))       
+        % Output: dx: \dot(x) (size: (xdim, n_element))
             dx = obj.f(x) + obj.g(x) * u;
         end
         
@@ -119,6 +121,7 @@ classdef CtrlAffineSys < handle
         % For 'built-in' setup, override this function with the
         % user-defined implementation of f(x).
         % Autonomous vector fields (or drift).
+        % x can be multiple element (size: (xdim, n_element))
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, f(x) should be overriden by user.");                
             end
@@ -130,6 +133,7 @@ classdef CtrlAffineSys < handle
         % For 'built-in' setup, override this function with the
         % user-defined implementation of g(x).
         % Control vector fields (or actuation effect).
+        % x can be multiple element (size: (xdim, n_element))
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.g(x) should be overriden by user.");                
             end
@@ -140,14 +144,16 @@ classdef CtrlAffineSys < handle
         % Vs = obj.clf(x)
         % For 'built-in' setup, override this function with the
         % user-defined implementation of the Control Lyapunov Function V(x).
-        % Vs:  (size: (obj.n_clf, 1))
+        % x can be multiple elements (size: (xdim, n_element))
+        % Vs:  (size: (obj.n_clf, n_element))
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.clf(x) should be overriden by user.");                
             end
-            Vs = zeros(obj.n_clf, 1);
+            n_states = size(x, 2);
+            Vs = zeros(obj.n_clf, n_states);
             for i = 1:obj.n_clf
                 clf_i = obj.clf_sym{i}(x);
-                Vs(i) = clf_i;
+                Vs(i, :) = clf_i;
             end
         end
         
@@ -155,14 +161,16 @@ classdef CtrlAffineSys < handle
         % LfVs = obj.lf_clf(x)
         % For 'built-in' setup, override this function with the
         % user-defined implementation of the lie derivative of the CLF L_f{V(x)}.
-        % LfVs:  (size: (obj.n_clf, 1))
+        % x can be multiple elements (size: (xdim, n_element))
+        % LfVs:  (size: (obj.n_clf, n_element))
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.lf_clf(x) should be overriden by user.");
             end
-            LfVs = zeros(obj.n_clf, 1);
+            n_states = size(x, 2);
+            LfVs = zeros(obj.n_clf, n_states);
             for i = 1:obj.n_clf               
                 lf_clf_i = obj.lf_clf_sym{i}(x);
-                LfVs(i) = lf_clf_i;
+                LfVs(i, :) = lf_clf_i;
             end
         end
         
@@ -170,29 +178,46 @@ classdef CtrlAffineSys < handle
         % LgVs = obj.lg_clf(x)
         % For 'built-in' setup, override this function with the
         % user-defined implementation of the lie derivative of the CLF L_g{V(x)}.
-        % LgVs:  (size: (obj.n_clf, obj.udim))        
+        % x can be multiple elements (size: (xdim, n_element))
+        % LgVs:  (size: (obj.n_clf, obj.udim, n_element))        
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.lg_clf(x) should be overriden by user.");
             end
-            LgVs = zeros(obj.n_clf, obj.udim);
+            n_states = size(x, 2);
+            LgVs = zeros(obj.n_clf, obj.udim, n_states);
             for i = 1:obj.n_clf
                 lg_clf_i = obj.lg_clf_sym{i}(x);
-                LgVs(i, :) = lg_clf_i;
+                LgVs(i, :, :) = lg_clf_i;
             end
         end
         
+        function Vdots = dclf(obj, x, u)
+        % Vdots = obj.dclf(x, u)
+        % Model based estimate of the Lie derivatives of CLF
+        % x can be multiple elements (size: (xdim, n_element))
+        % u can be multiple elements (size: (udim, n_element))
+        % Output size: (obj.n_clf, n_element)
+            u = reshape(u, [1, size(u)]);
+            u = permute(u, [2, 1, 3]);
+            LfVs = obj.lf_clf(x);
+            LgVs = obj.lg_clf(x);
+            Vdots = LfVs + reshape(pagemtimes(LgVs, u), obj.n_clf, []);            
+        end
+            
         function Bs = cbf(obj, x)
         % Bs = obj.cbf(x)
         % For 'built-in' setup, override this function with the
         % user-defined implementation of the Control Barrier Function B(x).
-        % Bs: (size: (obj.n_cbf, 1))
+        % x can be multiple elements (size: (xdim, n_element))
+        % Bs:  (size: (obj.n_cbf, n_element))
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.cbf(x) should be overriden by user.");                
             end
-            Bs = zeros(obj.n_cbf, 1);
+            n_states = size(x, 2);
+            Bs = zeros(obj.n_cbf, n_states);
             for i = 1:obj.n_cbf
                 cbf_i = obj.cbf_sym{i}(x);
-                Bs(i) = cbf_i;
+                Bs(i, :) = cbf_i;
             end
         end
         
@@ -200,14 +225,16 @@ classdef CtrlAffineSys < handle
         % LfBs = obj.lf_cbf(x)
         % For 'built-in' setup, override this function with the
         % user-defined implementation of the lie derivative of the CBF L_f{B(x)}.
-        % LfBs: (size: (obj.n_cbf, 1))
+        % x can be multiple elements (size: (xdim, n_element))
+        % LfBs: (size: (obj.n_cbf, n_element))
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.lf_cbf(x) should be overriden by user.");
             end
-            LfBs = zeros(obj.n_cbf, 1);
+            n_states = size(x, 2);
+            LfBs = zeros(obj.n_cbf, n_states);
             for i = 1:obj.n_cbf               
                 lf_cbf_i = obj.lf_cbf_sym{i}(x);
-                LfBs(i) = lf_cbf_i;
+                LfBs(i, :) = lf_cbf_i;
             end
         end
         
@@ -215,16 +242,31 @@ classdef CtrlAffineSys < handle
         % LgBs = obj.lg_cbf(x)
         % For 'built-in' setup, override this function with the
         % user-defined implementation of the lie derivative of the CBF L_g{B(x)}.
-        % LgBs: (size: (obj.n_cbf, obj.udim))
+        % x can be multiple elements (size: (xdim, n_element))
+        % LgBs: (size: (obj.n_cbf, obj.udim, n_element))
             if strcmp(obj.setup_option, 'built-in')
                 error("For 'built-in' setup_option, obj.lg_cbf(x) should be overriden by user.");
             end
-            LgBs = zeros(obj.n_cbf, obj.udim);
+            n_states = size(x, 2);
+            LgBs = zeros(obj.n_cbf, obj.udim, n_states);
             for i = 1:obj.n_cbf
                 lg_cbf_i = obj.lg_cbf_sym{i}(x);
-                LgBs(i, :) = lg_cbf_i;
+                LgBs(i, :, :) = lg_cbf_i;
             end
-        end        
+        end
+        
+        function Bdots = dcbf(obj, x, u)
+        % Bdots = obj.dcbf(x, u)
+        % Model based estimate of the Lie derivatives of CBF
+        % x can be multiple elements (size: (xdim, n_element))
+        % u can be multiple elements (size: (udim, n_element))
+        % Output size: (obj.n_cbf, n_element)
+            u = reshape(u, [1, size(u)]);
+            u = permute(u, [2, 1, 3]);
+            LfBs = obj.lf_cbf(x);
+            LgBs = obj.lg_cbf(x);
+            Bdots = LfBs + reshape(pagemtimes(LgBs, u), obj.n_cbf, []);            
+        end
     end
 end
 
