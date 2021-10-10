@@ -51,19 +51,49 @@ function [xs, us, ts, extraout] = rollout_controller( ...
 %   comp_times: trace of computation time for each timestep (length: total_k)
 
 settings = parse_function_args(varargin{:});
+% Feedback-linearizer Determinant
+if isa(control_sys, 'CtrlAffineSysFL')
+    is_FL_system = true;
+else
+    is_FL_system = false;
+end
+
 if ~isfield(settings, 't0')
     t0 = 0;
 else
     t0 = settings.t0;
 end
 
+% TODO: reverse calculate mu0 from u0
 if ~isfield(settings, 'u0')
     u0 = [];
 else
-    if length(u0) ~= control_sys.udim
+    if length(settings.u0) ~= control_sys.udim
         error("u0 dimension does not match with control_sys.udim.");
     end    
     u0 = settings.u0;
+end
+
+if ~isfield(settings, 'u_ref')
+    u_ref = [];
+else
+    if isa(settings.u_ref, 'function_handle')
+        error("Not supported in the current version.");
+    elseif length(settings.u_ref) ~= control_sys.udim
+        error("u_ref dimension does not match with control_sys.udim.");        
+    end
+    u_ref = settings.u_ref;
+end
+
+if ~isfield(settings, 'mu_ref')
+    mu_ref = [];
+else
+    if isa(settings.mu_ref, 'function_handle')
+        error("Not supported in the current version.");
+    elseif length(settings.mu_ref) ~= control_sys.udim
+        error("mu_ref dimension does not match with control_sys.udim.");        
+    end
+    mu_ref = settings.mu_ref;
 end
 
 if ~isfield(settings, 'dt')
@@ -82,17 +112,6 @@ if ~isfield(settings, 'ratio_u_diff')
     ratio_u_diff = 0;
 else
     ratio_u_diff = settings.ratio_u_diff;
-end
-
-if ~isfield(settings, 'u_ref')
-    u_ref = [];
-else
-    if isa(settings.u_ref, 'function_handle')
-        error("Not supported in the current version.");
-    elseif length(settings.u_ref) ~= control_sys.udim
-        error("u_ref dimension does not match with control_sys.udim.");        
-    end
-    u_ref = settings.u_ref;
 end
 
 if ~isfield(settings, 'verbose')
@@ -137,15 +156,23 @@ feas = [];
 slacks = [];
 comp_times = [];
 
+mus = [];
+ys = [];
+dys = [];
+
 % Initialize state & time.
 x = x0;
 t = t0;
+
 u_prev = zeros(control_sys.udim, 1);
+mu_prev = zeros(control_sys.udim, 1);
+
 end_simulation = false;
 %% Run simulation.
 % _t indicates variables for the current loop.
 while ~end_simulation
-    %% Determin control input.
+    %% Determine control input.
+    % TODO: can be simpler, but confusing.
     if t == t0 && ~isempty(u0)
         u = u0;
     else
@@ -154,8 +181,22 @@ while ~end_simulation
         else
             u_ref_t = u_ref;
         end
-        [u, extra_t]  = controller(x, u_ref_t, with_slack, verbose);
+        if is_FL_system
+            % TODO: going to support u_ref, mu_ref ver.
+            %[u, extra_t]  = controller(x, u_ref_t, mu_ref_t, with_slack, verbose);
+            % mu_ref_t should be supported
+            if isempty(mu_ref)
+                mu_ref_t = ratio_u_diff * u_prev;
+            else
+                mu_ref_t = mu_ref;
+            end
+            [u, extra_t]  = controller(x, mu_ref_t, with_slack, verbose);
+        else
+            [u, extra_t]  = controller(x, u_ref_t, with_slack, verbose);
+        end
+        
     end
+    
     us = [us, u];
     feas = [feas, extra_t.feas];
     comp_times = [comp_times, comp_times];
@@ -189,6 +230,11 @@ while ~end_simulation
     %% Record traces.
     xs = [xs, x];
     ts = [ts, t];
+    if is_FL_system
+        ys = [ys, extra_t.y];
+        dys = [dys, extra_t.dy];
+        mus = [mus, extra_t.mu];
+    end
 end % end of the main while loop
 %% Add control input for the final timestep.
 if isempty(u_ref)
@@ -197,6 +243,7 @@ else
     u_ref_t = u_ref;
 end
 [u, extra_t]  = controller(x, u_ref_t, with_slack, verbose);
+
 us = [us, u];
 feas = [feas, extra_t.feas];
 comp_times = [comp_times, comp_times];
@@ -208,6 +255,11 @@ if isfield(extra_t, 'Vs')
 end
 if isfield(extra_t, 'Bs')
     Bs = [Bs, extra_t.Bs];
+end
+if is_FL_system
+    ys = [ys, extra_t.y];
+    dys = [dys, extra_t.dy];
+    mus = [mus, extra_t.mu];
 end
 
 %% Make extraout
@@ -221,5 +273,10 @@ if ~isempty(Vs)
 end
 if ~isempty(Bs)
     extraout.Bs = Bs;
+end
+if is_FL_system
+    extraout.mus = mus;
+    extraout.ys = ys;
+    extraout.dys = dys;
 end
 end % end of the main function.

@@ -32,8 +32,13 @@ plant_sys = RabbitBuiltIn(params);
 plant_sys.params.scale = 1.5;
 %plant_sys.params.torso_add = 10;
 
-controller = @control_sys.ctrlClfQpFL; % controller
-event_options = odeset('Events', @plant_sys.rabbit_event); % contact detector
+% controller = @control_sys.ctrlClfQpFL; % controller
+feedback_clf_qp_controller = @(x, mu_ref, with_slack, verbose) control_sys...
+        .wrap_controller(x, mu_ref, with_slack, verbose, @control_sys.ctrlClfQpFL);
+simple_controller = feedback_clf_qp_controller;
+complex_controller = @control_sys.ctrlClfQpFL;
+
+event_func = @plant_sys.rabbit_event; % contact detector
 reset_map_function = @plant_sys.reset_map; % reset mapper
 
 %% Step 3. Initialize state
@@ -46,14 +51,32 @@ t0 = 0;
 
 %% Step 4. Main Simulation
 % rollout_controller_with_contact_version(for hybrid system)
-[xs, us, ts, extras] = rollout_controller_with_contact(...
-    x0, plant_sys, control_sys, controller, dt, ...
-    event_options, reset_map_function, nstep,...
-    'with_slack', with_slack, 'verbose', verbose);
+
+% run_simple
+%   to exploit full information, set this to false
+%   if you only want to use mu, y, set this to true
+
+% TODO: rollout_controller_for_multiple_resets.m => transpose different
+    % use eval_FL
+run_simple = true;
+if run_simple
+    [xs, us, ts, extras] = rollout_controller_for_multiple_resets_simple(...
+        x0, plant_sys, control_sys, simple_controller, dt, ...
+        event_func, reset_map_function, nstep,...
+        'with_slack', with_slack, 'verbose', verbose);
+    xs = xs';
+    ts = ts';
+else
+    [xs, us, ts, extras] = rollout_controller_for_multiple_resets_complex(...
+        x0, plant_sys, control_sys, complex_controller, dt, ...
+        event_func, reset_map_function, nstep,...
+        'with_slack', with_slack, 'verbose', verbose);
+end
 
 %% Step 5. Plot the result
-% TODO: tune the plot setting into new version 
-plot_rabbit_result(xs, ts, us, extras);
+if ~run_simple
+    plot_rabbit_result(xs, ts, us, extras);
+end
 
 %% Step 6. Five Link Animation
 animation_scale = plant_sys.params.scale;
