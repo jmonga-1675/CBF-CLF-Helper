@@ -1,27 +1,24 @@
-% function [xs, us, mus, ts, Vs, dVs_error, etas_zs, feas, slacks, extras] = rollout_controller_eval_clf_FL( ...
-%     x0, t0, plant_sys, control_sys, controller, dt, sim_t, with_slack, mu0, verbose, event_func)
-function [xs, us, ts, extras] = rollout_controller_eval_clf_FL( ...
+function [xs, us, ts, extras] = rollout_controller_eval_clf_FL_orig( ...
     x0, t0, plant_sys, control_sys, controller, dt, varargin)
 %% Parse varargin into settings
 % Support following symbols for varargin
     % with_slack
     % mu0 = reference for mu input
     % verbose = 0(run quitely), 1(show QP info)
-    % event_func = run simulation until event happens
+    % event_options = run simulation until event happens
     % sim_t = simulation time
     
 settings = parse_function_args(varargin{:});
+if ~isfield(settings, 'with_slack')
+    with_slack = 0;
+else
+    with_slack = settings.with_slack;
+end
 
 if ~isfield(settings, 'mu0')
     mu0 = [];
 else
     mu0 = settings.mu0;
-end
-
-if ~isfield(settings, 'with_slack')
-    with_slack = 0;
-else
-    with_slack = settings.with_slack;
 end
 
 if ~isfield(settings, 'verbose')
@@ -94,11 +91,9 @@ for k = 1:total_k-1
         u = control_sys.ctrlFeedbackLinearize(x, mu); % u=u_star + LgLf\mu
         dV_hat = LfV + LgV * mu; % model based estimate of dV
     end
-    
+    feas_k = extra_t.feas;
     slack = extra_t.slack;
     V = extra_t.Vs;
-    feas_k = extra_t.feas;
-    
     feas(k, :) = feas_k;
     us(k, :) = u;
     mus(k, :) = mu;
@@ -122,7 +117,7 @@ for k = 1:total_k-1
     %% Recording Section: Evaluate CLF related values after one time step.
     % Record dVs_error(k) = dV - dV_hat
     %        Vs = V_next
-    [y_next, dy_next, ~, ~, ~] = control_sys.eval_y(x_next);
+    [y_next, dy_next, ~, ~, phase_next] = control_sys.eval_y(x_next);
     z_next = control_sys.z(x_next);
     ys(k+1, :) = y_next; % Wonsuhk_revised
     dys(k+1, :) = dy_next;

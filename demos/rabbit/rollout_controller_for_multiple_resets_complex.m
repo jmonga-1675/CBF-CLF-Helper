@@ -1,16 +1,15 @@
-function [xs, us, ts, extras] = rollout_controller_with_contact(...
+function [xs, us, ts, extras] = rollout_controller_for_multiple_resets_complex(...
     x0, plant_sys, control_sys, controller, dt, ...
-    event_options, reset_map_function, nstep, ...
+    event_func, reset_map_function, nstep, ...
     varargin)
-%   TODO: to generalize this concept, maybe hybrid simulation might
-%   encompass well
+%   Rollout control for the hybrid system that uses reset_map functions
 %   Input
 %       Necessary
-%           nstep: number of contacts
-%           event: function handle that detect the contact
+%           event_func: function handle that detect the contact
 %           reset_map_function: reset the state after detection of the contact
+%           nstep: number of contacts
 %       Default
-%           varargin: with_slack, mu0, verbose, event_options
+%           varargin: with_slack, mu0, verbose, event_func
 %
 %   Output:
 %       xs: trajectory
@@ -58,7 +57,6 @@ function [xs, us, ts, extras] = rollout_controller_with_contact(...
     feas = [];
     slacks = [];
     step_logs = [];
-    
     %% Run Step Simulation
     for k = 1:nstep
         step_summary = strcat("[Step]", num2str(k)); disp(step_summary);
@@ -69,11 +67,12 @@ function [xs, us, ts, extras] = rollout_controller_with_contact(...
         % change this to lyapunov controller
         [xs_new, us_new, ts_new, extras_new] = rollout_controller_eval_clf_FL( ...
         x0, t0, plant_sys, control_sys, controller, dt, ...
-        'with_slack', with_slack, 'verbose', verbose, 'event_options', event_options, 'mu0', mu0);
+        'with_slack', with_slack, 'verbose', verbose, 'event_func', event_func);
+        % extras_new: y, dy, Fst, mu, 
     
-        Vs_new = extras_new.training_datas.Vs;
-        dVs_error_new = extras_new.training_datas.dVs_error;
-        etas_zs_new = extras_new.training_datas.etas_zs;
+        Vs_new = extras_new.logs.Vs;
+        dVs_error_new = extras_new.logs.dVs_error;
+        etas_zs_new = extras_new.logs.etas_zs;
     
         ys_new = extras_new.ys;
         dys_new = extras_new.dys;
@@ -141,9 +140,9 @@ function [xs, us, ts, extras] = rollout_controller_with_contact(...
         end
     end
     
-    extras.training_datas.Vs = Vs;
-    extras.training_datas.dVs_error = dVs_error;
-    extras.training_datas.etas_zs = etas_zs;
+    extras.logs.Vs = Vs;
+    extras.logs.dVs_error = dVs_error;
+    extras.logs.etas_zs = etas_zs;
     
     extras.feas = feas;
     extras.slacks = slacks;

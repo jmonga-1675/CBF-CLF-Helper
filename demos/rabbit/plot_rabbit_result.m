@@ -10,9 +10,9 @@ function plot_rabbit_result(xs, ts, us, extras)
 Vs = []; dVs_error = []; etas_zs = [];
 feas = []; slacks = []; mus = []; ys = []; dys = []; Fsts = [];
 for i = 1:length(extras)
-    Vs = [Vs; extras(i).training_datas.Vs];
-    dVs_error = [dVs_error; extras(i).training_datas.dVs_error'];
-    etas_zs = [etas_zs; extras(i).training_datas.etas_zs];
+    Vs = [Vs; extras(i).logs.Vs];
+    dVs_error = [dVs_error; extras(i).logs.dVs_error'];
+    etas_zs = [etas_zs; extras(i).logs.etas_zs];
     dys = [dys; extras(i).dys];
     ys = [ys; extras(i).ys];
     

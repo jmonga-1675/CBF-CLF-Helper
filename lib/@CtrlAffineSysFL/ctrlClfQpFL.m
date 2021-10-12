@@ -1,5 +1,5 @@
 %% Author: Jason Choi (jason.choi@berkeley.edu)
-function [mu, slack, V, feas] = ctrlClfQpFL(obj, s, mu_ref, with_slack, verbose)
+function [mu, extra_t] = ctrlClfQpFL(obj, s, mu_ref, with_slack, verbose)
     %% Implementation of CLF-QP under feedback linearization structure.
     % Inputs:   s: state
     %           mu_ref: reference virtual control input
@@ -10,7 +10,9 @@ function [mu, slack, V, feas] = ctrlClfQpFL(obj, s, mu_ref, with_slack, verbose)
     %           B: Value of the CBF at current state.
     %           V: Value of the CLF at current state.
     %           feas: 1 if QP is feasible, 0 if infeasible. (Note: even
-    %           when qp is infeasible, u is determined from quadprog.)        
+    %           when qp is infeasible, u is determined from quadprog.)
+    
+    % TODO: AffinesystemFL => u_ref, mu_ref (varargin input!)
     if nargin < 3
         mu_ref = zeros(obj.udim, 1);
     end
@@ -136,4 +138,8 @@ function [mu, slack, V, feas] = ctrlClfQpFL(obj, s, mu_ref, with_slack, verbose)
         end
         slack = [];
     end
+    
+    extra_t.slack = slack;
+    extra_t.feas = feas;
+    extra_t.Vs = V;
 end
