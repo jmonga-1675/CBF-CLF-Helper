@@ -38,7 +38,7 @@ params.udim = 1;
 acc_sys = AccBuiltIn(params);
 
 [xs, us, ts, extraout] = rollout_controller( ...
-    x0, acc_sys, acc_sys, @acc_sys.ctrlCbfClfQp, sim_t);
+    x0, acc_sys, acc_sys, @acc_sys.ctrlCbfClfQp, sim_t, 'verbose_level', 1);
 Vs = extraout.Vs;
 Bs = extraout.Bs;
 slacks = extraout.slacks;

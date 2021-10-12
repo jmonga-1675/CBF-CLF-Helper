@@ -23,15 +23,11 @@ function [xs, us, ts, extraout] = rollout_controller( ...
 %   t0: initial t (default: 0.0)
 %   u0: initial control input (if you want to specify the first input.)
 %   dt: sampling time (default: 0.01)
-%   end_event: function handle that ends the simulation, for more
+%   end_event_function: function handle that ends the simulation, for more
 %   information, please check out matlab ode Events.
 %   ode_func: your own choice of ode_func for simulation. (default: ode45)
 %   CONTROLLER OPTIONS:
 %   with_slack: if 1: relax constraints, 0: hard constraints. (default 1)
-%   ratio_u_diff: ratio(0.0~1.0) in the min-norm objective for minimizing the
-%   difference between u and u_prev (default 0.0)
-%       if 0.0 : minimizes the norm of plain u.
-%       if 1.0: minimize the norm of plain (u_k-u_{k-1})
 %   u_ref: reference signal of u. It can be a constant vector or a function
 %   handle that takes x as input.
 %   DEBUG:
@@ -53,13 +49,17 @@ function [xs, us, ts, extraout] = rollout_controller( ...
 %   slacks: trace of slack variables (size: (n_slack, total_k))
 %       Note that n_slack depends on the choice of the controller.
 %   comp_times: trace of computation time for each timestep (length: total_k)
-
+%   ys: trace of the output defined for feedback linearization (size: (control_sys.ydim, total_k))
+%   mus: trace of virtula control input for feedback linearizationb-based
+%       controller (size: (control_sys.udim, total_k))
+%   end_with_event: 1 if the simulation ended with the end_event, else 0.
 settings = parse_function_args(varargin{:});
+
 % Feedback-linearizer Determinant
 if isa(control_sys, 'CtrlAffineSysFL')
-    is_FL_system = true;
+    is_control_sys_FL = true;
 else
-    is_FL_system = false;
+    is_control_sys_FL = false;
 end
 
 if ~isfield(settings, 't0')
@@ -89,15 +89,42 @@ else
     u_ref = settings.u_ref;
 end
 
+if ~isfield(settings, 'mu0')
+    mu0 = [];
+else
+    if ~is_control_sys_FL
+        error("mu0 is supported only for control_sys of CtrlAffineSysFL");
+    end
+    if length(settings.mu0) ~= control_sys.udim
+        error("mu0 dimension does not match with control_sys.udim.");
+    end    
+    mu0 = settings.mu0;
+end
+
 if ~isfield(settings, 'mu_ref')
     mu_ref = [];
 else
-    if isa(settings.mu_ref, 'function_handle')
-        error("Not supported in the current version.");
-    elseif length(settings.mu_ref) ~= control_sys.udim
+    if ~is_control_sys_FL
+        error("mu_ref is supported only for control_sys of CtrlAffineSysFL");
+    end
+    if length(settings.mu_ref) ~= control_sys.udim
         error("mu_ref dimension does not match with control_sys.udim.");        
     end
     mu_ref = settings.mu_ref;
+end
+
+if ~isempty(u0) && ~isempty(mu0)
+    error("Only one of u0 and mu0 should be provided.");
+end
+
+if isempty(u_ref) && isempty(mu_ref)
+    ref_type = 0;
+elseif ~isempty(u_ref) && ~isempty(mu_ref)
+    error("Only one of u_ref and mu_ref should be provided.");
+elseif ~isempty(u_ref)
+    ref_type = 1; % reference signal is u.
+else
+    ref_type = 2; % reference signal is mu.
 end
 
 if ~isfield(settings, 'dt')
@@ -112,12 +139,6 @@ else
     with_slack = settings.with_slack;
 end
 
-if ~isfield(settings, 'ratio_u_diff')
-    ratio_u_diff = 0;
-else
-    ratio_u_diff = settings.ratio_u_diff;
-end
-
 if ~isfield(settings, 'verbose_level')
     if isfield(settings, 'verbose')
         verbose_level = settings.verbose;
@@ -128,10 +149,10 @@ else
     verbose_level = settings.verbose_level;
 end
 
-if ~isfield(settings, 'end_event')
-    end_event = [];
+if ~isfield(settings, 'end_event_function')
+    end_event_function = [];
 else
-    end_event = settings.end_event;
+    end_event_function = settings.end_event_function;
 end
 
 if ~isfield(settings, 'ode_func')
@@ -158,20 +179,17 @@ ts = t0;
 us = [];
 % traces for extras, they remain empty if not returned.
 feas = [];
+comp_times = [];
+slacks = [];
 Vs = [];
 Bs = [];
-feas = [];
-slacks = [];
-comp_times = [];
-
-mus = [];
+% traces for extras, specific to feedback linearize-based controller.
 ys = [];
-dys = [];
+mus = [];
 
 % Initialize state & time.
 x = x0;
 t = t0;
-
 u_prev = zeros(control_sys.udim, 1);
 mu_prev = zeros(control_sys.udim, 1);
 
@@ -180,29 +198,32 @@ end_simulation = false;
 % _t indicates variables for the current loop.
 while ~end_simulation
     %% Determine control input.
-    % TODO: can be simpler, but confusing.
     if t == t0 && ~isempty(u0)
         u = u0;
+    elseif t == t0 && ~isempty(mu0)
+        mu = mu0;
+        u = control_sys.ctrlFeedbackLinearize(x, mu);
     else
-        if isempty(u_ref)
-            u_ref_t = ratio_u_diff * u_prev;
-        else
-            u_ref_t = u_ref;
-        end
-        if is_FL_system
-            % TODO: going to support u_ref, mu_ref ver.
-            %[u, extra_t]  = controller(x, u_ref_t, mu_ref_t, with_slack, verbose);
-            % mu_ref_t should be supported
-            if isempty(mu_ref)
-                mu_ref_t = ratio_u_diff * u_prev;
+        if ref_type == 0
+            [u, extra_t] = controller(x, ...
+                'with_slack', with_slack, 'verbose', (verbose_level>=2));            
+        elseif ref_type == 1
+            if isa(u_ref, 'function_handle')
+                u_ref_t = u_ref(x, u_prev);
+            else
+                u_ref_t = u_ref;
+            end
+            [u, extra_t] = controller(x, 'u_ref', u_ref_t, ...
+                'with_slack', with_slack, 'verbose', (verbose_level>=2));                        
+        elseif ref_type == 2
+            if isa(mu_ref, 'function_handle')
+                mu_ref_t = mu_ref(x, mu_prev);
             else
                 mu_ref_t = mu_ref;
-            end
-            [u, extra_t] = controller(x, mu_ref_t, with_slack, verbose);
-        else
-            [u, extra_t] = controller(x, 'u_ref', u_ref_t, ...
-                'with_slack', with_slack, 'verbose', (verbose_level>=2));
-        end        
+            end            
+            [u, extra_t] = controller(x, 'mu_ref', mu_ref_t, ...
+                'with_slack', with_slack, 'verbose', (verbose_level>=2));                        
+        end
     end
     if verbose_level >= 1
         print_log(t, x, u, extra_t);
@@ -210,7 +231,7 @@ while ~end_simulation
 
     us = [us, u];
     feas = [feas, extra_t.feas];
-    comp_times = [comp_times, comp_times];
+    comp_times = [comp_times, extra_t.comp_time];
     if with_slack
         slacks = [slacks, extra_t.slack];
     end
@@ -220,19 +241,28 @@ while ~end_simulation
     if isfield(extra_t, 'Bs')
         Bs = [Bs, extra_t.Bs];
     end
+    if isfield(extra_t, 'y')
+        ys = [ys, extra_t.y];
+    end
+    if isfield(extra_t, 'mu')
+        mus = [mus, extra_t.mu];
+        mu_prev = extra_t.mu;
+    end        
     
     %% Run simulation for one time step.
     t_end_t = min(t + dt, t0+T);
-    if ~isempty(end_event)
-        ode_opt = odeset('Events', end_event);
+    if ~isempty(end_event_function)
+        ode_opt = odeset('Events', end_event_function);
         [ts_t, xs_t, t_event] = ode_func( ...
             @(t, x) plant_sys.dynamics(t, x, u), ...
             [t, t_end_t], x, ode_opt);
         end_simulation = (ts_t(end) == t0 + T) || ~isempty(t_event);
+        end_with_event = ~isempty(t_event);
     else
         [ts_t, xs_t] = ode_func(@(t, x) plant_sys.dynamics(t, x, u), ...
             [t, t_end_t], x);
         end_simulation = ts_t(end) == t0 + T;
+        end_with_event = [];
     end            
     t = ts_t(end);
     x = xs_t(end, :)';
@@ -241,27 +271,36 @@ while ~end_simulation
     %% Record traces.
     xs = [xs, x];
     ts = [ts, t];
-    if is_FL_system
-        ys = [ys, extra_t.y];
-        dys = [dys, extra_t.dy];
-        mus = [mus, extra_t.mu];
-    end
 end % end of the main while loop
 %% Add control input for the final timestep.
-if isempty(u_ref)
-    u_ref_t = ratio_u_diff * u_prev;
-else
-    u_ref_t = u_ref;
+if ref_type == 0
+    [u, extra_t] = controller(x, ...
+        'with_slack', with_slack, 'verbose', (verbose_level>=2));            
+elseif ref_type == 1
+    if isa(u_ref, 'function_handle')
+        u_ref_t = u_ref(x, u_prev);
+    else
+        u_ref_t = u_ref;
+    end
+    [u, extra_t] = controller(x, 'u_ref', u_ref_t, ...
+        'with_slack', with_slack, 'verbose', (verbose_level>=2));                        
+elseif ref_type == 2
+    if isa(mu_ref, 'function_handle')
+        mu_ref_t = mu_ref(x, mu_prev);
+    else
+        mu_ref_t = mu_ref;
+    end            
+    [u, extra_t] = controller(x, 'mu_ref', mu_ref_t, ...
+        'with_slack', with_slack, 'verbose', (verbose_level>=2));                        
 end
-[u, extra_t] = controller(x, 'u_ref', u_ref_t, ...
-                'with_slack', with_slack, 'verbose', (verbose_level>=2));
 if verbose_level >= 1
     print_log(t, x, u, extra_t);
 end
 
+
 us = [us, u];
 feas = [feas, extra_t.feas];
-comp_times = [comp_times, comp_times];
+comp_times = [comp_times, extra_t.comp_time];
 if with_slack
     slacks = [slacks, extra_t.slack];
 end
@@ -271,9 +310,10 @@ end
 if isfield(extra_t, 'Bs')
     Bs = [Bs, extra_t.Bs];
 end
-if is_FL_system
+if isfield(extra_t, 'y')
     ys = [ys, extra_t.y];
-    dys = [dys, extra_t.dy];
+end
+if isfield(extra_t, 'mu')
     mus = [mus, extra_t.mu];
 end
 
@@ -289,10 +329,14 @@ end
 if ~isempty(Bs)
     extraout.Bs = Bs;
 end
-if is_FL_system
-    extraout.mus = mus;
+if ~isempty(ys)
     extraout.ys = ys;
-    extraout.dys = dys;
+end
+if ~isempty(mus)
+    extraout.mus = mus;
+end
+if ~isempty(end_with_event)
+    extraout.end_with_event = end_with_event;
 end
 end % end of the main function.
 

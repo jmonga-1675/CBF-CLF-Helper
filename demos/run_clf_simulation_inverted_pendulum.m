@@ -26,7 +26,7 @@ x0 = [0.76; 0.05];
 ip_sys = InvertedPendulum(params);
 
 [xs, us, ts, extraout] = rollout_controller( ...
-    x0, ip_sys, ip_sys, @ip_sys.ctrlClfQp, sim_t);
+    x0, ip_sys, ip_sys, @ip_sys.ctrlClfQp, sim_t, 'verbose_level', 1);
 
 figure;
 title('Inverted Pendulum: CLF-QP States');

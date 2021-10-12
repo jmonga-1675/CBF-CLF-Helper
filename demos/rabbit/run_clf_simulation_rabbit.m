@@ -2,7 +2,7 @@
 % Wonsuhk Jung smw04015@snu.ac.kr
 % This is CBF-CLF Helper Version of RABBIT Bipedal Walker.
 % You can use a controller designed based on RES-CLF
-close all; clear all; clc;
+close all; clear all;
 
 %% Animation setting
 % This is only designed for enabling animation of bipedal walker
@@ -20,9 +20,9 @@ global animation_scale
 params = init_clf_simulation_rabbit; % Load all the parameters
 dt = 0.025; % simulation interval
 sim_t = 100; % simulation time 
-nstep = 10; % number of steps
+nstep = 5; % number of steps
 with_slack = true; % use slack variable in QP (change this into false in order not to use it)
-verbose = false; % show the QP-solving process
+verbose_level = 1;
 
 %% Step 2. Prepare System (Uncertainty control)
 control_sys = RabbitBuiltIn(params);
@@ -33,13 +33,10 @@ plant_sys.params.scale = 1.5;
 %plant_sys.params.torso_add = 10;
 
 % controller = @control_sys.ctrlClfQpFL; % controller
-feedback_clf_qp_controller = @(x, mu_ref, with_slack, verbose) control_sys...
-        .wrap_controller(x, mu_ref, with_slack, verbose, @control_sys.ctrlClfQpFL);
-simple_controller = feedback_clf_qp_controller;
-complex_controller = @control_sys.ctrlClfQpFL;
-
-event_func = @plant_sys.rabbit_event; % contact detector
-reset_map_function = @plant_sys.reset_map; % reset mapper
+clf_qp_controller = @(x, varargin) control_sys...
+        .ctrlFeedbackLinearize(x, @control_sys.ctrlClfQpFL, varargin{:});
+reset_event_func = @plant_sys.rabbit_event; % contact detector
+reset_map_func = @plant_sys.reset_map; % reset mapper
 
 %% Step 3. Initialize state
 % Init state.
@@ -50,33 +47,16 @@ x = x0;
 t0 = 0;
 
 %% Step 4. Main Simulation
-% rollout_controller_with_contact_version(for hybrid system)
-
-% run_simple
-%   to exploit full information, set this to false
-%   if you only want to use mu, y, set this to true
-
-% TODO: rollout_controller_for_multiple_resets.m => transpose different
-    % use eval_FL
-run_simple = true;
-if run_simple
-    [xs, us, ts, extras] = rollout_controller_for_multiple_resets_simple(...
-        x0, plant_sys, control_sys, simple_controller, dt, ...
-        event_func, reset_map_function, nstep,...
-        'with_slack', with_slack, 'verbose', verbose);
-    xs = xs';
-    ts = ts';
-else
-    [xs, us, ts, extras] = rollout_controller_for_multiple_resets_complex(...
-        x0, plant_sys, control_sys, complex_controller, dt, ...
-        event_func, reset_map_function, nstep,...
-        'with_slack', with_slack, 'verbose', verbose);
-end
+[xs, us, ts, extras] = rollout_controller_for_multiple_resets(...
+    x0, plant_sys, control_sys, clf_qp_controller, ...
+    reset_event_func, reset_map_func, nstep,...
+    'with_slack', with_slack, 'verbose_level', verbose_level, ...
+    'dt', dt, 'T_exit', 1, 'exclude_pre_reset', 1);
+xs = xs';
+ts = ts';
 
 %% Step 5. Plot the result
-if ~run_simple
-    plot_rabbit_result(xs, ts, us, extras);
-end
+% plot_rabbit_result(xs, ts, us, extras);
 
 %% Step 6. Five Link Animation
 animation_scale = plant_sys.params.scale;

@@ -1,5 +1,5 @@
 %% Author: Jason Choi (jason.choi@berkeley.edu)
-function [mu, extra_t] = ctrlClfQpFL(obj, s, mu_ref, with_slack, verbose)
+function [mu, extraout] = ctrlClfQpFL(obj, x, varargin)
     %% Implementation of CLF-QP under feedback linearization structure.
     % Inputs:   s: state
     %           mu_ref: reference virtual control input
@@ -13,22 +13,34 @@ function [mu, extra_t] = ctrlClfQpFL(obj, s, mu_ref, with_slack, verbose)
     %           when qp is infeasible, u is determined from quadprog.)
     
     % TODO: AffinesystemFL => u_ref, mu_ref (varargin input!)
-    if nargin < 3
+    kwargs = parse_function_args(varargin{:});
+    if ~isfield(kwargs, 'mu_ref')
+        % If u_ref is given, CLF-QP minimizes the norm of u-u_ref        
+        % Default reference control input is u.
         mu_ref = zeros(obj.udim, 1);
+    else
+        mu_ref = kwargs.mu_ref;
     end
-    if nargin < 4
+    if ~isfield(kwargs, 'with_slack')
+        % Relaxing is activated in default condition.
         with_slack = 1;
+    else
+        with_slack = kwargs.with_slack;
     end
-    if nargin < 5
+    if ~isfield(kwargs, 'verbose')
         % Run QP without log in default condition.
-        verbose = 0;
+        verbose = 1;
+    else
+        verbose = kwargs.verbose;
     end
 
     if size(mu_ref, 1) ~= obj.udim
         error("Wrong size of mu_ref, it should be (udim, 1) array.");
     end                
 
-    [y, dy, L2fy, LgLfy, ~] = obj.eval_y(s);
+    tstart = tic;
+
+    [y, dy, L2fy, LgLfy, ~] = obj.eval_y(x);
     
     V = obj.clf_FL(y, dy);
     LfV = obj.lF_clf_FL(y, dy);
@@ -119,7 +131,9 @@ function [mu, extra_t] = ctrlClfQpFL(obj, s, mu_ref, with_slack, verbose)
         [mu_slack, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2
             feas = 0;
-            disp("Infeasible QP. CBF constraint is conflicting with input constraints.");
+            if verbose
+                disp("Infeasible QP. CBF constraint is conflicting with input constraints.");
+            end
         else
             feas = 1;
         end
@@ -132,14 +146,18 @@ function [mu, extra_t] = ctrlClfQpFL(obj, s, mu_ref, with_slack, verbose)
         [mu, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2
             feas = 0;
-            disp("Infeasible QP. CBF constraint is conflicting with input constraints.");
+            if verbose
+                disp("Infeasible QP. CBF constraint is conflicting with input constraints.");
+            end
         else
             feas = 1;
         end
         slack = [];
     end
+    comp_time = toc(tstart);
     
-    extra_t.slack = slack;
-    extra_t.feas = feas;
-    extra_t.Vs = V;
+    extraout.slack = slack;
+    extraout.feas = feas;
+    extraout.Vs = V;
+    extraout.comp_time = comp_time;
 end
