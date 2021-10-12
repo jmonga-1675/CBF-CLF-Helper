@@ -32,7 +32,6 @@ classdef CtrlAffineSys < handle
         % (when they exist) is not recommended.
         % (Always preferred to refer directly to the class properties.)
         params
-        %config
                
         %% Functions generated from symbolic expressions.
         % (Used when setup_option is 'symbolic'.)

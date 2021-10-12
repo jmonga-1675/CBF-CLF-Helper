@@ -35,7 +35,11 @@ function [xs, us, ts, extraout] = rollout_controller( ...
 %   u_ref: reference signal of u. It can be a constant vector or a function
 %   handle that takes x as input.
 %   DEBUG:
-%   verbose: print log if 1
+%   verbose_level: 
+%       0: print no log (default)
+%       1: print log of the rollout
+%       2: print also the log of the controller
+%   if 'verbose' is set to 1(0), it sets verbose_level = 1(0)
 %% OUTPUTS
 %   xs: trace of state (size: (plant_sys.xdim, total_k))
 %   us: trace of control input (size: (control_sys.udim, total_k))
@@ -114,10 +118,14 @@ else
     ratio_u_diff = settings.ratio_u_diff;
 end
 
-if ~isfield(settings, 'verbose')
-    verbose = 0;
+if ~isfield(settings, 'verbose_level')
+    if isfield(settings, 'verbose')
+        verbose_level = settings.verbose;
+    else
+        verbose_level = 0;
+    end
 else
-    verbose = settings.verbose;
+    verbose_level = settings.verbose_level;
 end
 
 if ~isfield(settings, 'end_event')
@@ -190,13 +198,16 @@ while ~end_simulation
             else
                 mu_ref_t = mu_ref;
             end
-            [u, extra_t]  = controller(x, mu_ref_t, with_slack, verbose);
+            [u, extra_t] = controller(x, mu_ref_t, with_slack, verbose);
         else
-            [u, extra_t]  = controller(x, u_ref_t, with_slack, verbose);
-        end
-        
+            [u, extra_t] = controller(x, 'u_ref', u_ref_t, ...
+                'with_slack', with_slack, 'verbose', (verbose_level>=2));
+        end        
     end
-    
+    if verbose_level >= 1
+        print_log(t, x, u, extra_t);
+    end
+
     us = [us, u];
     feas = [feas, extra_t.feas];
     comp_times = [comp_times, comp_times];
@@ -222,7 +233,7 @@ while ~end_simulation
         [ts_t, xs_t] = ode_func(@(t, x) plant_sys.dynamics(t, x, u), ...
             [t, t_end_t], x);
         end_simulation = ts_t(end) == t0 + T;
-    end
+    end            
     t = ts_t(end);
     x = xs_t(end, :)';
     u_prev = u;
@@ -242,7 +253,11 @@ if isempty(u_ref)
 else
     u_ref_t = u_ref;
 end
-[u, extra_t]  = controller(x, u_ref_t, with_slack, verbose);
+[u, extra_t] = controller(x, 'u_ref', u_ref_t, ...
+                'with_slack', with_slack, 'verbose', (verbose_level>=2));
+if verbose_level >= 1
+    print_log(t, x, u, extra_t);
+end
 
 us = [us, u];
 feas = [feas, extra_t.feas];
@@ -280,3 +295,13 @@ if is_FL_system
     extraout.dys = dys;
 end
 end % end of the main function.
+
+function print_log(t, x, u, extra_t)
+        fprintf("t: %.3f, \t x: ", t);
+        fprintf("%.2g, ", x);
+        fprintf("\t u: ");
+        fprintf("%.2g, ", u);
+        fprintf("\t feas: %d", extra_t.feas);
+        % Add custom log here.
+        fprintf("\n");
+end

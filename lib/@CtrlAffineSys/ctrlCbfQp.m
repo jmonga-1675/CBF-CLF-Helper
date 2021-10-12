@@ -1,7 +1,8 @@
-function [u, extraout] = ctrlCbfQp(obj, x, u_ref, verbose, with_slack)
-%% [u, extraout] = ctrlCbfQp(obj, x, u_ref, verbose, with_slack)
+function [u, extraout] = ctrlCbfQp(obj, x, varargin)
+%% [u, extraout] = ctrlCbfQp(obj, x, varagin)
 %% Implementation of vanilla CBF-QP
 % Inputs:   x: state
+%   varargin:
 %           u_ref: reference control input
 %           verbose: flag for logging (1: print log, 0: run silently)
 % Outputs:  u: control input as a solution of the CBF-CLF-QP
@@ -17,15 +18,25 @@ function [u, extraout] = ctrlCbfQp(obj, x, u_ref, verbose, with_slack)
         error('CBF is not set up so ctrlCbfQp cannot be used.');
     end
         
-    if nargin < 3
+    kwargs = parse_function_args(varargin{:});
+    if ~isfield(kwargs, 'u_ref')
+        % If u_ref is given, CLF-QP minimizes the norm of u-u_ref        
+        % Default reference control input is u.
         u_ref = zeros(obj.udim, 1);
+    else
+        u_ref = kwargs.u_ref;
     end
-    if nargin < 4
+    if ~isfield(kwargs, 'with_slack')
+        % Relaxing is activated in default condition.
+        with_slack = 1;
+    else
+        with_slack = kwargs.with_slack;
+    end
+    if ~isfield(kwargs, 'verbose')
         % Run QP without log in default condition.
-        verbose = 0;
-    end
-    if nargin < 5
-        with_slack = obj.n_cbf > 1;
+        verbose = 1;
+    else
+        verbose = kwargs.verbose;
     end
 
     if size(u_ref, 1) ~= obj.udim
