@@ -5,10 +5,18 @@ function [xs, us, ts, extraout] = rollout_controller( ...
 %% [xs, us, ts, extras] = rollout_controller( ...
 %%    x0, t0, plant_sys, control_sys, controller, T, ...
 %%    'field1_name', field1_value, 'field2_name', field2_value)
-%% example:
-%% [xs, us, ts, extraout] = rollout_controller( ...
-%%    x0, t0, plant_sys, control_sys, @control_sys.ctrlClfQp, T);
-%% Vs = extraout.Vs;
+% example:
+% [xs, us, ts, extraout] = rollout_controller( ...
+%    x0, t0, plant_sys, control_sys, @control_sys.ctrlClfQp, T);
+% Vs = extraout.Vs;
+% In this function, the controller always takes 'with_slack', 'verbose' as
+% additional input arguments. Make sure your own controller supports these
+% fields with varargin. If you want to pass other varying input arguments
+% to the controller, follow the below sample code:
+% controller_handle = @(x, varargin) your_custom_controller(x, ...
+%    'field1_name', field1_value, 'field2_name', field2_value, varargin{:});
+% [xs, us, ts, extraout] = rollout_controller( ...
+%    x0, t0, plant_sys, control_sys, controller_handle, T);
 %% simulates plant_sys with ctrlClfQp controller of the control_sys
 %% for [t0, t0+T] starting at the initial state x0.
 %% INPUTS
@@ -200,9 +208,19 @@ while ~end_simulation
     %% Determine control input.
     if t == t0 && ~isempty(u0)
         u = u0;
+        % Run dummy controller to get extra_t
+        % TODO: this is a bad practice, fix this.
+        [~, extra_t] = controller(x, 'verbose', 0);
+        extra_t.feas = 1;
+        extra_t.comp_time = 0;
     elseif t == t0 && ~isempty(mu0)
         mu = mu0;
         u = control_sys.ctrlFeedbackLinearize(x, mu);
+        % Run dummy controller to get extra_t
+        % TODO: this is a bad practice, fix this.
+        [~, extra_t] = controller(x, 'verbose', 0);
+        extra_t.feas = 1;
+        extra_t.comp_time = 0;
     else
         if ref_type == 0
             [u, extra_t] = controller(x, ...
@@ -231,7 +249,11 @@ while ~end_simulation
 
     us = [us, u];
     feas = [feas, extra_t.feas];
-    comp_times = [comp_times, extra_t.comp_time];
+    if ~isfield(extra_t, 'comp_time')
+        comp_times = [comp_times, 0];
+    else
+        comp_times = [comp_times, extra_t.comp_time];        
+    end
     if with_slack
         slacks = [slacks, extra_t.slack];
     end

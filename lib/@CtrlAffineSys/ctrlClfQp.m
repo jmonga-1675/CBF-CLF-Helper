@@ -98,11 +98,16 @@ function [u, extraout] = ctrlClfQp(obj, x, varargin)
         [u_slack, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2            
             feas = 0;
-            disp("Infeasible QP. Numerical error might have occured.");
-            % Making up best-effort heuristic solution.            
+            if verbose
+                disp("Infeasible QP. Numerical error might have occured.");
+            end
             u = zeros(obj.udim, 1);
-            for i = 1:obj.udim
-                u(i) = obj.u_min(i) * (LgVs(i) > 0) + obj.u_max(i) * (LgVs(i) <= 0);
+            % Making up best-effort heuristic solution, if single clf
+            % constraint.
+            if obj.n_clf == 1
+                for i = 1:obj.udim
+                    u(i) = obj.u_min(i) * (LgVs(i) > 0) + obj.u_max(i) * (LgVs(i) <= 0);
+                end
             end
             slack = zeros(obj.n_clf, 1);
         else
@@ -116,7 +121,9 @@ function [u, extraout] = ctrlClfQp(obj, x, varargin)
         [u, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2
             feas = 0;
-            disp("Infeasible QP. CLF constraint is conflicting with input constraints.");
+            if verbose
+                disp("Infeasible QP. CLF constraint is conflicting with input constraints.");
+            end
             % Making up best-effort heuristic solution.
             u = zeros(obj.udim, 1);
             for i = 1:obj.udim

@@ -98,8 +98,17 @@ function [u, extraout] = ctrlCbfQp(obj, x, varargin)
         [u_slack, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2            
             feas = 0;
-            disp("Infeasible QP. Numerical error might have occured.");
+            if verbose
+                disp("Infeasible QP. Numerical error might have occured.");
+            end
             u = zeros(obj.udim, 1);
+            % Making up best-effort heuristic solution, if single cbf
+            % constraint.
+            if obj.n_cbf == 1
+                for i = 1:obj.udim
+                    u(i) = obj.u_min(i) * (LgBs(i) <= 0) + obj.u_max(i) * (LgBs(i) > 0);
+                end
+            end
             slack = zeros(obj.n_clf, 1);
         else
             feas = 1;
@@ -113,7 +122,9 @@ function [u, extraout] = ctrlCbfQp(obj, x, varargin)
         [u, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2
             feas = 0;
-            disp("Infeasible QP. CBF constraint is conflicting with input constraints.");
+            if verbose
+                disp("Infeasible QP. CBF constraint is conflicting with input constraints.");
+            end
         else
             feas = 1;
         end

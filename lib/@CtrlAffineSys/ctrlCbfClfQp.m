@@ -117,7 +117,9 @@ function [u, extraout] = ctrlCbfClfQp(obj, x, varargin)
         [u_slack, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2
             feas = 0;
-            disp("Infeasible QP. CBF constraint is conflicting with input constraints.");
+            if verbose
+                disp("Infeasible QP. CBF constraint is conflicting with input constraints.");
+            end
             u = zeros(obj.udim, 1);
             slack = zeros(n_slack, 1);
         else
@@ -132,7 +134,9 @@ function [u, extraout] = ctrlCbfClfQp(obj, x, varargin)
         [u, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2
             feas = 0;
-            disp("Infeasible QP. CBF constraint is conflicting with input constraints.");
+            if verbose
+                disp("Infeasible QP. CBF constraint is conflicting with input constraints.");
+            end
         else
             feas = 1;
         end

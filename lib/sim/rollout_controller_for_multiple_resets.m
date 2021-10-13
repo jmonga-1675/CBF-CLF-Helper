@@ -76,17 +76,17 @@ for k = 1:n_reset
         x0, plant_sys, control_sys, controller, T_exit,...
         varargin{:}, 'verbose_level', verbose_level_rollout, 't0', t0, ...
         'end_event_function', reset_event_function);
-    end_with_event = extras_new.end_with_event;
+    end_with_reset = extras_new.end_with_event;
     extras_new = rmfield(extras_new, 'end_with_event');
     step_summary.x_terminal = xs_new(:, end);
     step_summary.T = ts_new(end) - ts_new(1);
-    step_summary.end_with_event = end_with_event;
+    step_summary.end_with_event = end_with_reset;
     if verbose_level >= 1
         print_step_summary(k, step_summary);
     end
     % Save to log.
     %% TODO: this can be changed based on the exit_function.
-    if end_with_event && exclude_pre_reset
+    if end_with_reset && exclude_pre_reset
         index_last = length(ts_new)-1;
     else
         index_last = length(ts_new);
@@ -96,7 +96,7 @@ for k = 1:n_reset
     xs = [xs, xs_new(:, 1:index_last)];
     us = [us, us_new(:, 1:index_last)];
     
-    if ~end_with_event
+    if ~end_with_reset
         % One step rollout terminated without hitting the reset. Terminate
         % the simulation here.
         break;
