@@ -1,9 +1,9 @@
 function [xs, us, ts, extraout] = rollout_controller( ...
     x0, plant_sys, control_sys, controller, T, varargin)
 %% [xs, us, ts, extras] = rollout_controller( ...
-%%    x0, t0, plant_sys, control_sys, controller, T, varargin)
+%%    x0, plant_sys, control_sys, controller, T, varargin)
 %% [xs, us, ts, extras] = rollout_controller( ...
-%%    x0, t0, plant_sys, control_sys, controller, T, ...
+%%    x0, plant_sys, control_sys, controller, T, ...
 %%    'field1_name', field1_value, 'field2_name', field2_value)
 % example:
 % [xs, us, ts, extraout] = rollout_controller( ...
@@ -38,6 +38,7 @@ function [xs, us, ts, extraout] = rollout_controller( ...
 %   with_slack: if 1: relax constraints, 0: hard constraints. (default 1)
 %   u_ref: reference signal of u. It can be a constant vector or a function
 %   handle that takes x as input.
+%   t_tolerance: time tolerance for ending the simulation (default 1e-10)
 %   DEBUG:
 %   verbose_level: 
 %       0: print no log (default)
@@ -89,9 +90,8 @@ end
 if ~isfield(settings, 'u_ref')
     u_ref = [];
 else
-    if isa(settings.u_ref, 'function_handle')
-        error("Not supported in the current version.");
-    elseif length(settings.u_ref) ~= control_sys.udim
+    if ~isa(settings.u_ref, 'function_handle') && ...
+            (length(settings.u_ref) ~= control_sys.udim)
         error("u_ref dimension does not match with control_sys.udim.");        
     end
     u_ref = settings.u_ref;
@@ -167,6 +167,12 @@ if ~isfield(settings, 'ode_func')
     ode_func = @ode45;
 else
     ode_func = settings.ode_func;
+end
+
+if ~isfield(settings, 't_tolerance')
+    t_tolerance = 1e-10;
+else
+    t_tolerance = settings.t_tolerance;
 end
 
 % Dimension check
@@ -278,12 +284,12 @@ while ~end_simulation
         [ts_t, xs_t, t_event] = ode_func( ...
             @(t, x) plant_sys.dynamics(t, x, u), ...
             [t, t_end_t], x, ode_opt);
-        end_simulation = (ts_t(end) == t0 + T) || ~isempty(t_event);
+        end_simulation = abs(ts_t(end) - (t0 + T))<t_tolerance || ~isempty(t_event);
         end_with_event = ~isempty(t_event);
     else
         [ts_t, xs_t] = ode_func(@(t, x) plant_sys.dynamics(t, x, u), ...
             [t, t_end_t], x);
-        end_simulation = ts_t(end) == t0 + T;
+        end_simulation = abs(ts_t(end) - (t0 + T))<t_tolerance;
         end_with_event = [];
     end            
     t = ts_t(end);

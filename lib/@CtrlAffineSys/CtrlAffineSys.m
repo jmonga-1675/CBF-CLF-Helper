@@ -185,7 +185,7 @@ classdef CtrlAffineSys < handle
             n_states = size(x, 2);
             LgVs = zeros(obj.n_clf, obj.udim, n_states);
             for i = 1:obj.n_clf
-                lg_clf_i = obj.lg_clf_sym{i}(x);
+                lg_clf_i = reshape(obj.lg_clf_sym{i}(x), [], obj.udim)';
                 LgVs(i, :, :) = lg_clf_i;
             end
         end

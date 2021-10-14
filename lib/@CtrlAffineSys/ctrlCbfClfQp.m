@@ -38,7 +38,7 @@ function [u, extraout] = ctrlCbfClfQp(obj, x, varargin)
     end
     if ~isfield(kwargs, 'verbose')
         % Run QP without log in default condition.
-        verbose = 1;
+        verbose = 0;
     else
         verbose = kwargs.verbose;
     end
