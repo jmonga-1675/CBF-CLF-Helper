@@ -11,6 +11,7 @@ classdef RabbitBuiltIn < CtrlAffineSysFL
                              0, 0, 0, 0, 0, 0, 1;
                              0, 0, 0, 1, 0, 0, 0;
                              0, 0, 0, 0, 1, 0, 0];
+        fall_threshold = 0.699;
     end
     methods
         function obj = RabbitBuiltIn(params)

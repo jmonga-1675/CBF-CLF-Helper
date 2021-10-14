@@ -199,6 +199,7 @@ Vs = [];
 Bs = [];
 % traces for extras, specific to feedback linearize-based controller.
 ys = [];
+dys = [];
 mus = [];
 
 % Initialize state & time.
@@ -272,6 +273,9 @@ while ~end_simulation
     if isfield(extra_t, 'y')
         ys = [ys, extra_t.y];
     end
+    if isfield(extra_t, 'dy')
+        dys = [dys, extra_t.dy];
+    end
     if isfield(extra_t, 'mu')
         mus = [mus, extra_t.mu];
         mu_prev = extra_t.mu;
@@ -341,6 +345,9 @@ end
 if isfield(extra_t, 'y')
     ys = [ys, extra_t.y];
 end
+if isfield(extra_t, 'dy')
+    dys = [dys, extra_t.dy];
+end
 if isfield(extra_t, 'mu')
     mus = [mus, extra_t.mu];
 end
@@ -359,6 +366,9 @@ if ~isempty(Bs)
 end
 if ~isempty(ys)
     extraout.ys = ys;
+end
+if ~isempty(dys)
+    extraout.dys = dys;
 end
 if ~isempty(mus)
     extraout.mus = mus;
