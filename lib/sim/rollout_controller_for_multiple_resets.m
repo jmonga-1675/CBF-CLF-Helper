@@ -10,12 +10,12 @@ function [xs, us, ts, extras] = rollout_controller_for_multiple_resets(...
 %           n_reset: number of reset to simulate.
 %       Default
 %           varargin: with_slack, mu0, verbose, event_options
-%% Supported fields for varargin
+%%   Supported fields for varargin
 %       T_exit: exit simulation if one rollout exit this time before
 %       hitting the reset map.
 %       exclude_pre_reset: excludes pre reset xs, us, ts, etc from the
 %       traces. (default: 0)
-%       TODO: exit_function: if this exit condition is satisfied, terminate
+%       exit_function: if this exit condition is satisfied, terminate
 %       simulation without going further.
 %   DEBUG:
 %   verbose_level: 
@@ -49,6 +49,12 @@ if ~isfield(settings, 'exclude_pre_reset')
     exclude_pre_reset = 0;
 else
     exclude_pre_reset = settings.exclude_pre_reset;
+end
+
+if ~isfield(settings, 'exit_function')
+    exit_function = [];
+else
+    exit_function = settings.exit_function;
 end
 
 if ~isfield(settings, 'verbose_level')
@@ -86,17 +92,26 @@ for k = 1:n_reset
     end
     % Save to log.
     %% TODO: this can be changed based on the exit_function.
-    if end_with_reset && exclude_pre_reset
-        index_last = length(ts_new)-1;
+    [exit_flag, exit_valid_index] = exit_function(xs_new);
+    if exclude_pre_reset
+        margin = 1;
     else
-        index_last = length(ts_new);
-    end       
+        margin = 0;
+    end
+    
+    if exit_flag
+        % normally exited
+        index_last = exit_valid_index - margin;
+    else
+        index_last = length(ts_new) - margin;
+    end
+    
     extras = fetch_extras(extras, extras_new, index_last);   
     ts = [ts, ts_new(1:index_last)];
     xs = [xs, xs_new(:, 1:index_last)];
     us = [us, us_new(:, 1:index_last)];
     
-    if ~end_with_reset
+    if ~end_with_reset || exit_flag
         % One step rollout terminated without hitting the reset. Terminate
         % the simulation here.
         break;

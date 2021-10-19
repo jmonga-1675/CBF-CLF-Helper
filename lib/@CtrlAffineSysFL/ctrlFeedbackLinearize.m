@@ -31,7 +31,7 @@ else
         "the function handle that defines the controller.")
 end
 
-y = obj.y(x);
+[y, dy, ~, ~, ~] = obj.eval_y(x);
 if obj.rel_deg_y == 1
     Lfy = obj.lf_y(x);
     Lgy = obj.lg_y(x);
@@ -78,5 +78,6 @@ end
 
 extraout.mu = mu_;
 extraout.y = y;
+extraout.dy = dy;
 extraout.feedforward = feedforward;
 extraout.u_raw = u_raw;
