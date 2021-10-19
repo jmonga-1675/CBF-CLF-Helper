@@ -25,6 +25,10 @@ classdef CtrlAffineSys < handle
         % Number of cbf in use
         n_cbf
         
+        % weights used in the built-in controllers
+        weight_input
+        weight_slack
+        
         % Model parameters as a structure object, specific to the system.
         % This might contain other parameters used for setting up the dynsys,
         % for instance, clf_rate and cbf_rate. However, referring to this 
@@ -249,7 +253,7 @@ classdef CtrlAffineSys < handle
             n_states = size(x, 2);
             LgBs = zeros(obj.n_cbf, obj.udim, n_states);
             for i = 1:obj.n_cbf
-                lg_cbf_i = obj.lg_cbf_sym{i}(x);
+                lg_cbf_i = reshape(obj.lg_cbf_sym{i}(x), [], obj.udim)';
                 LgBs(i, :, :) = lg_cbf_i;
             end
         end

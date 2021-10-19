@@ -89,18 +89,14 @@ function [u, extraout] = ctrlCbfClfQp(obj, x, varargin)
         end
         A = [A, A_slack];
     end
-
-    %% Cost
-    if isfield(obj.params.weight, 'input')
-        if size(obj.params.weight.input, 1) == 1 
-            weight_input = obj.params.weight.input * eye(obj.udim);
-        elseif all(size(obj.params.weight.input) == obj.udim)
-            weight_input = obj.params.weight.input;
-        else
-            error("params.weight.input should be either a scalar value or an (udim, udim) array.")
-        end
+    if ~isfield(kwargs, 'weight_slack')
+        weight_slack = obj.weight_slack * ones(n_slack);
     else
-        weight_input = eye(obj.udim);
+        if numel(kwargs.weight_slack) ~= n_slack
+            error("wrong weight_slack size. it should be a vector of n_slack:=%s", ...
+                "n_clf if n_cbf==1, else (n_clf+n_cbf).");
+        end
+        weight_slack = kwargs.weight_slack;
     end
     
     if verbose
@@ -110,10 +106,9 @@ function [u, extraout] = ctrlCbfClfQp(obj, x, varargin)
     end
     if with_slack         
         % cost = 0.5 [u' slack] H [u; slack] + f [u; slack]
-        % TODO: refactor handling obj.params.weight.slack
-        H = [weight_input, zeros(obj.udim, n_slack);
-            zeros(n_slack, obj.udim), diag(obj.params.weight.slack)];
-        f_ = [-weight_input * u_ref; zeros(n_slack, 1)];
+        H = [obj.weight_input, zeros(obj.udim, n_slack);
+            zeros(n_slack, obj.udim), diag(weight_slack)];
+        f_ = [-obj.weight_input * u_ref; zeros(n_slack, 1)];
         [u_slack, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2
             feas = 0;
@@ -129,8 +124,8 @@ function [u, extraout] = ctrlCbfClfQp(obj, x, varargin)
         end        
     else
         % cost = 0.5 u' H u + f u
-        H = weight_input;
-        f_ = -weight_input * u_ref;
+        H = obj.weight_input;
+        f_ = -obj.weight_input * u_ref;
         [u, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2
             feas = 0;

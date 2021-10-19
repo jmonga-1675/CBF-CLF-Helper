@@ -167,6 +167,73 @@ function init_sys(obj, params)
             end
         end
     end
+    %% Parse weight parameters.
+    % obj.weight_input is saved as (udim x udim) matrix.
+    if isfield(params, 'weight')
+        if isfield(params.weight, 'input')
+            weight_input = params.weight.input;
+            if length(weight_input) == 1
+                obj.weight_input = weight_input * eye(obj.udim);
+            elseif isrow(weight_input) && length(weight_input) == obj.udim
+                obj.weight_input = diag(weight_input);
+            elseif iscolumn(params.weight.input)
+                obj.weight_input = diag(weight_input);
+            elseif all(size(obj.params.weight.input) == obj.udim)
+                obj.weight_input = weight_input;
+            else
+                error("params.weight.input should be either a scalar value%s", ...
+                    "(udim) vector that contains the diagonal elements of ", ...
+                    "the weight matrix, or the (udim, udim) full matrix.")
+            end
+        end
+    end
+    if isfield(params, 'weight_input')
+        weight_input = params.weight_input;
+        if length(weight_input) == 1
+            obj.weight_input = weight_input * eye(obj.udim);
+        elseif isrow(weight_input) && length(weight_input) == obj.udim
+            obj.weight_input = diag(weight_input);
+        elseif iscolumn(params.weight.input)
+            obj.weight_input = diag(weight_input);
+        elseif all(size(obj.params.weight.input) == obj.udim)
+            obj.weight_input = weight_input;
+        else
+            error("params.weight_input should be either a scalar value%s", ...
+                "(udim) vector that contains the diagonal elements of ", ...
+                "the weight matrix, or the (udim, udim) full matrix.")
+        end
+    end
+    if isempty(obj.weight_input)
+        obj.weight_input = eye(obj.udim);
+    end
+    % obj.weight_slack is saved as a scalar value.
+    if isfield(params, 'weight')
+        if isfield(params.weight, 'slack')
+            weight_slack = params.weight.slack;
+            if length(weight_slack) == 1
+                obj.weight_slack = weight_slack;
+            else
+                error("Default slack weight should be a scalar value. %s", ...
+                    "If you want to specify different slack weights for ", ...
+                    "each constraint, pass it to the controllers as ", ...
+                    "additional argument 'weight_slack'");
+            end
+        end
+    end    
+    if isfield(params, 'weight_slack')
+        weight_slack = params.weight_slack;
+        if length(weight_slack) == 1
+            obj.weight_slack = weight_slack;
+        else
+            error("Default slack weight should be a scalar value. %s", ...
+                "If you want to specify different slack weights for ", ...
+                "each constraint, pass it to the controllers as ", ...
+                "additional argument 'weight_slack'");
+        end
+    end
+    if isempty(obj.weight_slack)
+        error("Either params.weight.slack or params.weight_slack should be provided.");
+    end
     
     %% Do sanity check if all necessary functions are set up properly.
     x_test = zeros(obj.xdim, 1);

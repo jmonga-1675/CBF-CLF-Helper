@@ -21,13 +21,16 @@ params.xd = 12;
 params.yd = 0;
 
 params.clf.rate = 0.5;
-params.weight.slack = [1, 100, 100];
+params.weight_slack = 1;
 
 params.cbf.rate = 50;
 
 dubins = DubinsCar(params);
 
-controller = @dubins.ctrlCbfClfQp;
+weight_slack_for_cbfs = 100 * ones(size(params.d));
+
+controller = @(x, varargin) dubins.ctrlCbfClfQp(x, ...
+    'weight_slack', [params.weight_slack, weight_slack_for_cbfs], varargin{:});
 
 [xs, us, ts, extraout] = rollout_controller( ...
     x0, dubins, dubins, controller, sim_t);

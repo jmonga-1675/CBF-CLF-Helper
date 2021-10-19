@@ -38,6 +38,14 @@ function [u, extraout] = ctrlClfQp(obj, x, varargin)
     else
         verbose = kwargs.verbose;
     end
+    if ~isfield(kwargs, 'weight_slack')
+        weight_slack = obj.weight_slack * ones(obj.n_clf);
+    else
+        if numel(kwargs.weight_slack) ~= obj.n_clf
+            error("wrong weight_slack size. it should be a vector of length obj.n_clf.");
+        end
+        weight_slack = kwargs.weight_slack;        
+    end
     
     if size(u_ref, 1) ~= obj.udim
         error("Wrong size of u_ref, it should be (udim, 1) array.");
@@ -71,19 +79,6 @@ function [u, extraout] = ctrlClfQp(obj, x, varargin)
         A = [A, A_slack];
     end
     
-    %% Cost
-    if isfield(obj.params.weight, 'input')
-        if size(obj.params.weight.input, 1) == 1 
-            weight_input = obj.params.weight.input * eye(obj.udim);
-        elseif all(size(obj.params.weight.input) == obj.udim)
-            weight_input = obj.params.weight.input;
-        else
-            error("params.weight.input should be either a scalar value or an (udim, udim) array.")
-        end
-    else
-        weight_input = eye(obj.udim);
-    end
-    
     if verbose
         options =  optimoptions('quadprog', 'ConstraintTolerance', 1e-6, 'StepTolerance', 1e-12, 'Display','iter');
     else
@@ -92,9 +87,9 @@ function [u, extraout] = ctrlClfQp(obj, x, varargin)
     
     if with_slack         
         % cost = 0.5 [u' slack] H [u; slack] + f [u; slack]
-        H = [weight_input, zeros(obj.udim, obj.n_clf);
-            zeros(obj.n_clf, obj.udim), diag(obj.params.weight.slack)];
-        f_ = [-weight_input * u_ref; zeros(obj.n_clf, 1)];
+        H = [obj.weight_input, zeros(obj.udim, obj.n_clf);
+            zeros(obj.n_clf, obj.udim), diag(weight_slack)];
+        f_ = [-obj.weight_input * u_ref; zeros(obj.n_clf, 1)];
         [u_slack, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2            
             feas = 0;
@@ -116,8 +111,8 @@ function [u, extraout] = ctrlClfQp(obj, x, varargin)
             slack = u_slack(obj.udim+1:end);
         end
     else
-        H = weight_input;
-        f_ = -weight_input * u_ref;
+        H = obj.weight_input;
+        f_ = -obj.weight_input * u_ref;
         [u, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2
             feas = 0;
