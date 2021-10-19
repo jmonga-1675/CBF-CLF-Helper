@@ -117,14 +117,25 @@ function extras = fetch_extras(extras, extras_new, index_last)
     n_field = length(extras_field_name);
     for i_field = 1:n_field
         to_attach = extras_new.(extras_field_name{i_field});
-        otherdims = repmat({':'},1,ndims(to_attach)-1);
-        to_attach = to_attach(otherdims{:}, 1:index_last);
-        if isfield(extras, extras_field_name{i_field})
-            extras.(extras_field_name{i_field}) = ...
-                cat(ndims(to_attach), extras.(extras_field_name{i_field}), to_attach);
+        if iscell(to_attach)
+            to_attach = to_attach(1:index_last);
+            if isfield(extras, extras_field_name{i_field})
+                extras.(extras_field_name{i_field})(end+1:end+index_last) = ...
+                    to_attach;
+            else
+                extras.(extras_field_name{i_field}) = to_attach;
+            end
         else
-            extras.(extras_field_name{i_field}) = to_attach;
+            otherdims = repmat({':'},1,ndims(to_attach)-1);
+            to_attach = to_attach(otherdims{:}, 1:index_last);
+            if isfield(extras, extras_field_name{i_field})
+                extras.(extras_field_name{i_field}) = ...
+                    cat(ndims(to_attach), extras.(extras_field_name{i_field}), to_attach);
+            else
+                extras.(extras_field_name{i_field}) = to_attach;
+            end            
         end
+
     end
 end
 

@@ -200,6 +200,8 @@ Bs = [];
 % traces for extras, specific to feedback linearize-based controller.
 ys = [];
 mus = [];
+% traces for other extras
+extraout = struct;
 
 % Initialize state & time.
 x = x0;
@@ -254,6 +256,7 @@ while ~end_simulation
     end
 
     us = [us, u];
+    extraout = fetch_other_extras(extraout, extra_t);
     feas = [feas, extra_t.feas];
     if ~isfield(extra_t, 'comp_time')
         comp_times = [comp_times, 0];
@@ -327,6 +330,7 @@ end
 
 
 us = [us, u];
+extraout = fetch_other_extras(extraout, extra_t);
 feas = [feas, extra_t.feas];
 comp_times = [comp_times, extra_t.comp_time];
 if with_slack
@@ -367,6 +371,32 @@ if ~isempty(end_with_event)
     extraout.end_with_event = end_with_event;
 end
 end % end of the main function.
+
+
+function extras = fetch_other_extras(extras, extra_t)
+    if length(fieldnames(extras)) == 0
+        extras_field_name = fieldnames(extra_t);
+    else
+        extras_field_name = fieldnames(extras);
+    end
+    
+    n_field = length(extras_field_name);
+    for i_field = 1:n_field
+        if ~strcmp(extras_field_name{i_field}, 'feas') && ...
+                ~strcmp(extras_field_name{i_field}, 'comp_time') && ...
+                ~strcmp(extras_field_name{i_field}, 'slack') && ...
+                ~strcmp(extras_field_name{i_field}, 'Vs') && ...
+                ~strcmp(extras_field_name{i_field}, 'Bs') && ...
+                ~strcmp(extras_field_name{i_field}, 'y') && ...
+                ~strcmp(extras_field_name{i_field}, 'mu')
+            to_attach = extra_t.(extras_field_name{i_field});
+            if ~isfield(extras, extras_field_name{i_field})
+                extras.(extras_field_name{i_field}) = {};
+            end
+            extras.(extras_field_name{i_field}){end+1} = to_attach;
+        end
+    end
+end
 
 function print_log(t, x, u, extra_t)
         fprintf("t: %.3f, \t x: ", t);
