@@ -211,8 +211,10 @@ u_prev = zeros(control_sys.udim, 1);
 mu_prev = zeros(control_sys.udim, 1);
 
 end_simulation = false;
+MAX_TIME = 20;
 %% Run simulation.
 % _t indicates variables for the current loop.
+tstart = tic;
 while ~end_simulation
     %% Determine control input.
     if t == t0 && ~isempty(u0)
@@ -296,13 +298,17 @@ while ~end_simulation
     else
         [ts_t, xs_t] = ode_func(@(t, x) plant_sys.dynamics(t, x, u), ...
             [t, t_end_t], x);
+        % TODO: When ODE Fails due to divergence, infinite-loop
+        t_ode = toc(tstart);
+        if t_ode > MAX_TIME
+            break
+        end
         end_simulation = abs(ts_t(end) - (t0 + T))<t_tolerance;
         end_with_event = [];
     end            
     t = ts_t(end);
     x = xs_t(end, :)';
     u_prev = u;
-
     %% Record traces.
     xs = [xs, x];
     ts = [ts, t];
