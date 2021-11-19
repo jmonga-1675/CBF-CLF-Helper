@@ -68,20 +68,20 @@ classdef RabbitBuiltIn < CtrlAffineSysFL
             % RABBIT g(x)
             [~, g_] = obj.defineDynamics(x);
         end
-        function z_ = z(obj, x)
+        function zs = z(obj, xs)
             % zero dynamics
             n = obj.xdim/2;
-            q = x(1:n);
-            dq = x(n+1:2*n);
+            q = xs(1:n, :);
+            dq = xs(n+1:2*n, :);
             
-            theta = q(3) + q(4) + q(5)/2;
+            theta = q(3, :) + q(4, :) + q(5, :)/2;
 %             theta_init = obj.params.legacy.theta_init;
 %             theta_end = obj.params.legacy.theta_end;
 %             phase = min(max((theta - theta_init)/(theta_end - theta_init)));
             
-            dtheta = dq(3) + dq(4) + dq(5)/2;
+            dtheta = dq(3, :) + dq(4, :) + dq(5, :)/2;
             
-            z_ = [theta dtheta];
+            zs = [theta; dtheta];
         end
         function B = cbf(obj, x)
             % TODO: CBF(x)

@@ -73,6 +73,7 @@ x = x0;
 xs = [];
 ts = [];
 us = [];
+index_reset = [];
 extras = [];
 
 %% Run Step Simulation
@@ -110,6 +111,7 @@ for k = 1:n_reset
     ts = [ts, ts_new(1:index_last)];
     xs = [xs, xs_new(:, 1:index_last)];
     us = [us, us_new(:, 1:index_last)];
+    index_reset = [index_reset; length(ts)];
     
     if ~end_with_reset || exit_flag
         % One step rollout terminated without hitting the reset. Terminate
@@ -120,6 +122,7 @@ for k = 1:n_reset
     x0 = reset_map_function(xs_new(:, end)');
     t0 = ts_new(end);    
 end
+extras.index_reset = index_reset;
 end % end of the main function.
 
 function extras = fetch_extras(extras, extras_new, index_last)

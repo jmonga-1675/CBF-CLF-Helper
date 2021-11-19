@@ -420,6 +420,7 @@ function print_log(t, x, u, extra_t)
         fprintf("\t u: ");
         fprintf("%.2g, ", u);
         fprintf("\t feas: %d", extra_t.feas);
+        fprintf("\t comp_time: %.2f", extra_t.comp_time);
         % Add custom log here.
         fprintf("\n");
 end
