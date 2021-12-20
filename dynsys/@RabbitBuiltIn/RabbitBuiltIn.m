@@ -131,7 +131,7 @@ classdef RabbitBuiltIn < CtrlAffineSysFL
         
         function Lgy = lg_y(obj, x)
             % TODO: Not used in RABBIT
-            Lgy = -1;
+            Lgy = zeros(obj.ydim, 1);
         end
         
         function LgLfy = lglf_y(obj, x)

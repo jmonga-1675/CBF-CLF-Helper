@@ -63,7 +63,7 @@ close all; clear all;
 
 params = init_clf_simulation_rabbit;
 dt = 0.025;
-nstep = 5;
+nstep = 10;
 with_slack = true;
 verbose_level = 1;
 
@@ -72,7 +72,7 @@ control_sys = RabbitBuiltIn(params);
 plant_sys = RabbitBuiltIn(params);
 
 % Reflect model uncertainty here
-plant_sys.params.scale = 1.5;
+plant_sys.params.scale = 1.0;
 %plant_sys.params.torso_add = 10;
 
 clf_qp_controller = @(x, varargin) control_sys...
