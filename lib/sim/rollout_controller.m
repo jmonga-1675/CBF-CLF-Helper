@@ -236,6 +236,7 @@ while ~end_simulation
         if ref_type == 0
             [u, extra_t] = controller(x, ...
                 'with_slack', with_slack, 'verbose', (verbose_level>=2));            
+            
         elseif ref_type == 1
             if isa(u_ref, 'function_handle')
                 u_ref_t = u_ref(x, u_prev);
@@ -404,7 +405,8 @@ function extras = fetch_other_extras(extras, extra_t)
                 ~strcmp(extras_field_name{i_field}, 'Vs') && ...
                 ~strcmp(extras_field_name{i_field}, 'Bs') && ...
                 ~strcmp(extras_field_name{i_field}, 'y') && ...
-                ~strcmp(extras_field_name{i_field}, 'mu')
+                ~strcmp(extras_field_name{i_field}, 'mu') && ...
+                ~strcmp(extras_field_name{i_field}, 'dy')
             to_attach = extra_t.(extras_field_name{i_field});
             if ~isfield(extras, extras_field_name{i_field})
                 extras.(extras_field_name{i_field}) = {};

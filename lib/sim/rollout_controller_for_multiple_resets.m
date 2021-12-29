@@ -66,6 +66,7 @@ if ~isfield(settings, 'verbose_level')
 else
     verbose_level = settings.verbose_level;
 end
+
 verbose_level_rollout = max(verbose_level-1, 0);
 
 x = x0;
@@ -111,12 +112,13 @@ for k = 1:n_reset
     ts = [ts, ts_new(1:index_last)];
     xs = [xs, xs_new(:, 1:index_last)];
     us = [us, us_new(:, 1:index_last)];
-    index_reset = [index_reset; length(ts)];
-    
+
     if ~end_with_reset || exit_flag
         % One step rollout terminated without hitting the reset. Terminate
         % the simulation here.
         break;
+    else
+        index_reset = [index_reset; length(ts)];
     end
     %% reset to next initial state.
     x0 = reset_map_function(xs_new(:, end)');
