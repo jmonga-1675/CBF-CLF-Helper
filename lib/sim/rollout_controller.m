@@ -217,11 +217,15 @@ MAX_TIME = 20;
 tstart = tic;
 while ~end_simulation
     %% Determine control input.
+    tstart = tic; % DEBUG
+    
     if t == t0 && ~isempty(u0)
         u = u0;
         % Run dummy controller to get extra_t
         % TODO: this is a bad practice, fix this.
+        
         [~, extra_t] = controller(x, 'verbose', 0);
+        
         extra_t.feas = 1;
         extra_t.comp_time = 0;
     elseif t == t0 && ~isempty(mu0)
@@ -258,7 +262,9 @@ while ~end_simulation
     if verbose_level >= 1
         print_log(t, x, u, extra_t);
     end
-
+    
+    tend = toc(tstart);
+    
     us = [us, u];
     extraout = fetch_other_extras(extraout, extra_t);
     feas = [feas, extra_t.feas];
