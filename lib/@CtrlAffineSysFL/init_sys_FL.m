@@ -62,9 +62,9 @@ function init_sys_FL(obj, params)
         -Kp*eye(obj.ydim), -Kd*eye(obj.ydim)];
     %obj.Gram_clf_FL = lyap(A', Q); % A'P+PA=Q, find P
     
-    A = [zeros(4), eye(4); zeros(4), zeros(4)];
-    B = [zeros(4); eye(4)];
-    [~, obj.Gram_clf_FL] = lqr(A, B, Q, 0.2*eye(4));
+%     A = [zeros(4), eye(4); zeros(4), zeros(4)];
+%     B = [zeros(4); eye(4)];
+%     [~, obj.Gram_clf_FL] = lqr(A, B, Q, 0.2*eye(4));
 
 
     if isfield(params, 'clf')
