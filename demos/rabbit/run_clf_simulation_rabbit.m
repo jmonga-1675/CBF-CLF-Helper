@@ -72,7 +72,7 @@ control_sys = RabbitBuiltIn(params);
 plant_sys = RabbitBuiltIn(params);
 
 % Reflect model uncertainty here
-plant_sys.params.scale = 2.2;
+plant_sys.params.scale = 1.8;
 %plant_sys.params.torso_add = 10;
 
 clf_qp_controller = @(x, varargin) control_sys...
