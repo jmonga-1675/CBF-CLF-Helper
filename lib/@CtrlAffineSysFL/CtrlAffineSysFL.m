@@ -34,8 +34,11 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         % binary indicator on whether it uses phase-based output or not.
         use_phase        
         
+        % rate of the RES-CLF.
+        eps_FL
         % CLF under feedback linearization and its derivatives as function handles.
         Gram_clf_FL % Gram matrix of the CLF for feedback linearization.
+        
     end
     
     methods
@@ -55,10 +58,6 @@ classdef CtrlAffineSysFL < CtrlAffineSys
             
             obj@CtrlAffineSys(params, setup_option);
             obj.init_sys_FL(params);
-            
-            %[s, f, g] = defineSystem(obj, params);
-            %[y, phase, y_max_exceed, y_min_exceed] = obj.defineOutput(params, s);
-            %obj.initOutputDynamics(s, f, g, y, phase, y_max_exceed, y_min_exceed, params);
         end
         
         function [y, phase, y_max_exceed, y_min_exceed] = defineOutput(obj, params, symbolic_state)
@@ -69,18 +68,18 @@ classdef CtrlAffineSysFL < CtrlAffineSys
         end
         
         function V = clf_FL(obj, y, dy)
-            eta_eps = [(1/obj.params.epsilon_FL)*y; dy];
+            eta_eps = [(1/obj.eps_FL)*y; dy];
             V = transpose(eta_eps)*obj.Gram_clf_FL*eta_eps;
         end
         
         function lF_clf_ = lF_clf_FL(obj, y, dy)
-            eta_eps = [(1/obj.params.epsilon_FL)*y; dy];
+            eta_eps = [(1/obj.eps_FL)*y; dy];
             P = obj.Gram_clf_FL;
             lF_clf_ = transpose(eta_eps)*(transpose(obj.F_FL_eps)*P+P*obj.F_FL_eps)*eta_eps;
         end
         
         function lG_clf_ = lG_clf_FL(obj, y, dy)
-            eta_eps = [(1/obj.params.epsilon_FL)*y; dy];
+            eta_eps = [(1/obj.eps_FL)*y; dy];
             P = obj.Gram_clf_FL;
             lG_clf_ = (2 * (obj.G_FL'*P) * eta_eps)';
         end

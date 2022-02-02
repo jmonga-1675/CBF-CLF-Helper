@@ -124,7 +124,6 @@ function init_sys(obj, params)
     %% Parse parameters for both setup_option.
     % set cbf rate, clf rate
     if isfield(params, 'clf') && isfield(params.clf, 'rate')
-        %% TODO: change this to params.clf_rate
         obj.clf_rate = params.clf.rate;
     elseif isfield(params, 'clf_rate')
         obj.clf_rate = params.clf_rate;
@@ -133,7 +132,6 @@ function init_sys(obj, params)
             "in order to use CLF.");
     end
     if isfield(params, 'cbf') && isfield(params.cbf, 'rate')
-        %% TODO: change this to params.cbf_rate            
         obj.cbf_rate = params.cbf.rate;
     elseif isfield(params, 'cbf_rate')
         obj.cbf_rate = params.cbf_rate;

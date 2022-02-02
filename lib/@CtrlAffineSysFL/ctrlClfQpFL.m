@@ -29,9 +29,15 @@ function [mu, extraout] = ctrlClfQpFL(obj, x, varargin)
     end
     if ~isfield(kwargs, 'verbose')
         % Run QP without log in default condition.
-        verbose = 1;
+        verbose = 0;
     else
         verbose = kwargs.verbose;
+    end
+    
+    if ~isfield(kwargs, 'weight_slack')
+        weight_slack = obj.weight_slack;
+    else
+        weight_slack = kwargs.weight_slack;
     end
 
     if size(mu_ref, 1) ~= obj.udim
@@ -39,7 +45,6 @@ function [mu, extraout] = ctrlClfQpFL(obj, x, varargin)
     end                
 
     tstart = tic;
-
     [y, dy, L2fy, LgLfy, ~] = obj.eval_y(x);
     
     V = obj.clf_FL(y, dy);
@@ -48,73 +53,27 @@ function [mu, extraout] = ctrlClfQpFL(obj, x, varargin)
         
     inv_LgLfy = inv(LgLfy);
     u_star = -LgLfy\L2fy; %feedforward term
-    if with_slack
-        %% Decision variables (obj.udim + 1)
-        %%      1-udim: \mu
-        %%      udim+1: slack
-        A = [LgV, -1];
-        b = [-LfV - obj.params.clf.rate * V];
-        %% Add input constraints if u_max or u_min exists.
-        if isfield(obj.params, 'u_max')
-            A = [A; inv_LgLfy, zeros(obj.udim, 1);];
-            if size(obj.params.u_max, 1) == 1
-                b = [b; obj.params.u_max * ones(obj.udim, 1)-u_star];
-            elseif size(obj.params.u_max, 1) == obj.udim
-                b = [b; obj.params.u_max-ustar];
-            else
-                error("params.u_max should be either a scalar value or an (udim, 1) array.")
-            end
-        end
-        if isfield(obj.params, 'u_min')
-            A = [A; -inv_LgLfy, zeros(obj.udim, 1);];
-            if size(obj.params.u_min, 1) == 1
-                b = [b; u_star-obj.params.u_min * ones(obj.udim, 1)];
-            elseif size(obj.params.u_min, 1) == obj.udim
-                b = [b; u_star-obj.params.u_min];
-            else
-                error("params.u_min should be either a scalar value or an (udim, 1) array")
-            end
-        end        
-    else
-        %% Decision variables (obj.udim)
-        %%      1-udim: \mu
-        A = [LgV];
-        b = [-LfV - obj.params.clf.rate * V];
-        %% Add input constraints if u_max or u_min exists.
-        if isfield(obj.params, 'u_max')
-            A = [A; inv_LgLfy];
-            if size(obj.params.u_max, 1) == 1
-                b = [b; obj.params.u_max * ones(obj.udim, 1)-u_star];
-            elseif size(obj.params.u_max, 1) == obj.udim
-                b = [b; obj.params.u_max-ustar];
-            else
-                error("params.u_max should be either a scalar value or an (udim, 1) array.")
-            end
-        end
-        if isfield(obj.params, 'u_min')
-            A = [A; -inv_LgLfy];
-            if size(obj.params.u_min, 1) == 1
-                b = [b; u_star-obj.params.u_min * ones(obj.udim, 1)];
-            elseif size(obj.params.u_min, 1) == obj.udim
-                b = [b; u_star-obj.params.u_min];
-            else
-                error("params.u_min should be either a scalar value or an (udim, 1) array")
-            end
-        end
+    
+    %% Constraints : A[u; slack] <= b
+    A = LgV;
+    b = -LfV - obj.clf_rate * V;
+    if ~isempty(obj.u_max)
+        A = [A; inv_LgLfy];
+        b = [b; obj.u_max - u_star];
     end
-
-
-    %% Cost
-    if isfield(obj.params.weight, 'input')
-        if size(obj.params.weight.input, 1) == 1 
-            weight_input = obj.params.weight.input * eye(obj.udim);
-        elseif all(size(obj.params.weight.input) == obj.udim)
-            weight_input = obj.params.weight.input;
-        else
-            error("params.weight.input should be either a scalar value or an (udim, udim) array.")
+    if ~isempty(obj.u_min)
+        A = [A; -inv_LgLfy];
+        b = [b; u_star - obj.u_min];
+    end
+    if with_slack
+        A_slack = -1;
+        if ~isempty(obj.u_max)
+            A_slack = [A_slack; zeros(obj.udim, 1)];
         end
-    else
-        weight_input = eye(obj.udim);
+        if ~isempty(obj.u_min)
+            A_slack = [A_slack; zeros(obj.udim, 1)];
+        end
+        A = [A, A_slack];
     end
     
     if verbose
@@ -122,33 +81,39 @@ function [mu, extraout] = ctrlClfQpFL(obj, x, varargin)
     else
         options =  optimset('Display','off');
     end
-    if with_slack         
+    
+    if with_slack
         % cost = 0.5 [u' slack] H [u; slack] + f [u; slack]
-        H = [weight_input, zeros(obj.udim, 1);
-            zeros(1, obj.udim), obj.params.weight.slack];
-        f_ = [-weight_input * mu_ref; 0];
+        H = [obj.weight_input, zeros(obj.udim, 1);
+            zeros(1, obj.udim), weight_slack];
+        f_ = [-obj.weight_input * mu_ref; 0];
         
         [mu_slack, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2
             feas = 0;
             if verbose
-                disp("Infeasible QP. CBF constraint is conflicting with input constraints.");
+                disp("Infeasible QP. Numerical error might have occured.");
             end
+            %% TODO: think about the backup controller. (FYI: ctrlClfQp.m)
+            mu = zeros(obj.udim, 1);
+            slack = 0;
         else
             feas = 1;
+            mu = mu_slack(1:obj.udim);
+            slack = mu_slack(end);
         end
-        mu = mu_slack(1:obj.udim);
-        slack = mu_slack(end);
     else
         % cost = 0.5 u' H u + f u
-        H = weight_input;
-        f_ = -weight_input * mu_ref;
+        H = obj.weight_input;
+        f_ = -obj.weight_input * mu_ref;
         [mu, ~, exitflag, ~] = quadprog(H, f_, A, b, [], [], [], [], [], options);
         if exitflag == -2
             feas = 0;
             if verbose
-                disp("Infeasible QP. CBF constraint is conflicting with input constraints.");
+                disp("Infeasible QP. CLF constraint is conflicting with input constraints.");
             end
+            %% TODO: think about the backup controller. (FYI: ctrlClfQp.m)
+            mu = zeros(obj.udim, 1);
         else
             feas = 1;
         end

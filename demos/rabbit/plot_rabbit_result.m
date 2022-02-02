@@ -54,14 +54,14 @@ title('Euclidian Norm of the Tracking Error');
 plot(ts,sqrt(ys(:,1).^2+ys(:,2).^2+...
     ys(:,3).^2+ys(:,4).^2), 'color', main_color_blue); 
 ylabel('||y||_2 (rad)'); grid on;
-callPlotSettings(fig_sz_with_subplots, plot_pos);
+% callPlotSettings(fig_sz_with_subplots, plot_pos);
 
 subplot1(2); hold on;
 title('Euclidian Norm of the Derivative of the Tracking Error');
 plot(ts,sqrt(dys(:,1).^2+dys(:,2).^2+...
     dys(:,3).^2+dys(:,4).^2), 'color', main_color_blue); 
 ylabel('$||\dot{y}||_{2}$ (rad/s)','Interpreter','latex'); xlabel('Time (s)'); grid on;
-callPlotSettings(fig_sz_with_subplots, plot_pos);
+% callPlotSettings(fig_sz_with_subplots, plot_pos);
 %print('-f9','plot_tracking_error', '-dpng');
 
 figure(7);
