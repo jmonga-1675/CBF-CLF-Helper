@@ -106,6 +106,7 @@ function init_sys(obj, params)
         n_clf = 1;
         try
             clf_test = obj.clf(x_test);
+            n_clf = length(clf_test);
         catch e
             n_clf = 0;
         end
@@ -113,6 +114,7 @@ function init_sys(obj, params)
         n_cbf = 1;
         try
             cbf_test = obj.cbf(x_test);
+            n_cbf = length(cbf_test);
         catch e
             n_cbf = 0;
         end

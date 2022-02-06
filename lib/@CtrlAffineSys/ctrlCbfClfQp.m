@@ -73,7 +73,7 @@ function [u, extraout] = ctrlCbfClfQp(obj, x, varargin)
     if with_slack
         % n_slack(size of slack):
         %   = n_clf if n_cbf=1 (Relaxing only the CLF constraints)
-        %   = (n_clf + n_cbf) if n_cbf >=1 (Relaxing all constraints)
+        %   = (n_clf + n_cbf) if n_cbf >1 (Relaxing all constraints)
         if obj.n_cbf == 1
             n_slack = obj.n_clf;
             A_slack = [-eye(obj.n_clf); zeros(1, obj.n_clf)];
@@ -90,7 +90,7 @@ function [u, extraout] = ctrlCbfClfQp(obj, x, varargin)
         A = [A, A_slack];
     end
     if ~isfield(kwargs, 'weight_slack')
-        weight_slack = obj.weight_slack * ones(n_slack);
+        weight_slack = obj.weight_slack * ones(n_slack, 1);
     else
         if numel(kwargs.weight_slack) ~= n_slack
             error("wrong weight_slack size. it should be a vector of n_slack:=%s", ...
