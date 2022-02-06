@@ -104,20 +104,48 @@ t0 = 0;
     reset_event_func, reset_map_func, nstep,...
     'with_slack', with_slack, 'verbose_level', verbose_level, ...
     'dt', dt, 'T_exit', 1, 'exclude_pre_reset', 1, 'exit_function', exit_func);
-xs = xs';
-ts = ts';
+extras.forces = plant_sys.get_force(xs, us);
 
 l_min_t_anim = [];
 l_max_t_anim = [];
 index_reset = [0; extras.index_reset];
+l_min_t = cell(nstep, 1);
+lf_vec = [];
 for i = 1:nstep
     l_min_t_anim = [l_min_t_anim; 1000; ...  % 1000: temporal fix for bug.
         steps_min(i) * ones(index_reset(i+1)-index_reset(i)-1, 1)];
+    l_min_t{i} = steps_min(i) * ones(index_reset(i+1)-index_reset(i), 1);
     l_max_t_anim = [l_max_t_anim; 1000; ...  % 1000: temporal fix for bug.
         steps_max(i) * ones(index_reset(i+1)-index_reset(i)-1, 1)];    
+    l_max_t{i} = steps_max(i) * ones(index_reset(i+1)-index_reset(i), 1);
 end
+% for j=1:length(ts)
+%     
+%     [ds, u, FSt_u_p, FSt_nu_p, y_out, dy_out, CBF] = five_link_dynamics_cbf_clf(t_vec(j), s_vec(j, :)');
+%     Fst = FSt_u_p*u + FSt_nu_p;
+%     Fst_vec = [Fst_vec;Fst'];  
+%     u_vec = [u_vec;u'];
+%     y_out_vec = [y_out_vec; y_out'];
+%     dy_out_vec = [dy_out_vec; dy_out'];
+%     
+%     if control_type == 4 || control_type == 5 || control_type == 6 || control_type == 7
+%         lf = p_LeftToe(s_vec(j,1:n)')-p_RightToe(s_vec(j,1:n)');
+%         lf_vec = [lf_vec;lf(1)];
+%         CBF_vec = [CBF_vec;CBF.'];
+%     end
+%         
+% end
+
+extras.l_min_t = l_min_t;
+extras.l_max_t = l_max_t;
+
 %% Step 5. Plot the result
-plot_rabbit_result(xs, ts, us, extras);
+result.trajectory = xs;
+result.stamps = ts;
+result.controls = us;
+result.forces = extras.forces;
+plot_rabbit_state_history(result);
+% plot_rabbit_result(xs, ts, us, extras);
 
 %% Step 6. Five Link Animation
 % This is only designed for enabling animation of bipedal walker
@@ -125,6 +153,6 @@ global animation_scale
 animation_scale = plant_sys.params.scale;
 global SimConfig
 SimConfig.m_load=0;
-animation_dt = 0.05;
-s_quan_vec = coordinateTransformation(xs);
-anim_moving_stone_load(ts, s_quan_vec, animation_dt, l_min_t_anim, l_max_t_anim);
+% animation_dt = 0.05;
+% xs_vis = coordinateTransformation(xs');
+% anim_moving_stone_load(ts', xs_vis, animation_dt, l_min_t_anim, l_max_t_anim);
