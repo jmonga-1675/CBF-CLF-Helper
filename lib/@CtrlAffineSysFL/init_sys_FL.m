@@ -1,7 +1,7 @@
 function init_sys_FL(obj, params)
 %% Functions that initialize dynamic system
     if ~isfield(params, 'use_phase')
-        obj.use_phase = 1;    
+        obj.use_phase = 0;    
     else
         obj.use_phase = params.use_phase;
         obj.params = rmfield(obj.params, 'use_phase');
@@ -24,6 +24,9 @@ function init_sys_FL(obj, params)
             error("rel_deg_y should be specified for built-in setup.");
         end
         obj.rel_deg_y = params.rel_deg_y; % TODO: other way to judge it?
+        if obj.rel_deg_y ~= 2
+            error("Not Suppported");
+        end
         obj.ydim = obj.udim;
     else
         error("Undefined setup_option.");

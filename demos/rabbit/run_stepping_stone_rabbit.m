@@ -62,13 +62,22 @@ close all; clear all;
 %   1: not use slack variable while solving QP
 
 init_clf_simulation_rabbit;
-dt = 0.025;
-%dt = 0.002;
-nstep = 10;
+%% Control Barrier Function Parameters
+params.cbf.rate = 50;
+% Used in the cbf.
+params.gamma_b = 100;
+%% Settings for the Stepping stones
+step_width = 0.05;
+steps_min = [0.33, 0.37, 0.33];
+steps_max = steps_min + step_width;
+dt = 0.002;
+nstep = length(steps_min);
 with_slack = true;
 verbose_level = 1;
 
 %% Step 2. Prepare System (Uncertainty control)
+params.steps_min = steps_min;
+params.steps_max = steps_max;
 control_sys = RabbitBuiltIn(params);
 plant_sys = RabbitBuiltIn(params);
 
@@ -76,10 +85,10 @@ plant_sys = RabbitBuiltIn(params);
 plant_sys.params.scale = 1.0;
 %plant_sys.params.torso_add = 10;
 
-clf_qp_controller = @(x, varargin) control_sys...
-        .ctrlFeedbackLinearize(x, @control_sys.ctrlClfQpFL, varargin{:});
+cbf_clf_qp_controller = @(x, varargin) control_sys...
+        .ctrlFeedbackLinearize(x, @control_sys.ctrlCbfClfQpFL, varargin{:});
 reset_event_func = @plant_sys.rabbit_event;
-reset_map_func = @plant_sys.reset_map;
+reset_map_func = @plant_sys.reset_map_with_step_update;
 exit_func = @control_sys.exit_event;
 
 %% Step 3. Initialize state
@@ -91,20 +100,31 @@ t0 = 0;
 %% Step 4. Main Simulation
 % Rollout the simulation
 [xs, us, ts, extras] = rollout_controller_for_multiple_resets(...
-    x0, plant_sys, control_sys, clf_qp_controller, ...
+    x0, plant_sys, control_sys, cbf_clf_qp_controller, ...
     reset_event_func, reset_map_func, nstep,...
     'with_slack', with_slack, 'verbose_level', verbose_level, ...
     'dt', dt, 'T_exit', 1, 'exclude_pre_reset', 1, 'exit_function', exit_func);
 xs = xs';
 ts = ts';
 
+l_min_t_anim = [];
+l_max_t_anim = [];
+index_reset = [0; extras.index_reset];
+for i = 1:nstep
+    l_min_t_anim = [l_min_t_anim; 1000; ...  % 1000: temporal fix for bug.
+        steps_min(i) * ones(index_reset(i+1)-index_reset(i)-1, 1)];
+    l_max_t_anim = [l_max_t_anim; 1000; ...  % 1000: temporal fix for bug.
+        steps_max(i) * ones(index_reset(i+1)-index_reset(i)-1, 1)];    
+end
 %% Step 5. Plot the result
 plot_rabbit_result(xs, ts, us, extras);
 
 %% Step 6. Five Link Animation
 % This is only designed for enabling animation of bipedal walker
-% global animation_scale 
-% animation_scale = plant_sys.params.scale;
-% animation_dt = 0.05;
-% x_quan_vec = coordinateTransformation(xs);
-% anim_flat_ground(ts, x_quan_vec, animation_dt)
+global animation_scale 
+animation_scale = plant_sys.params.scale;
+global SimConfig
+SimConfig.m_load=0;
+animation_dt = 0.05;
+s_quan_vec = coordinateTransformation(xs);
+anim_moving_stone_load(ts, s_quan_vec, animation_dt, l_min_t_anim, l_max_t_anim);

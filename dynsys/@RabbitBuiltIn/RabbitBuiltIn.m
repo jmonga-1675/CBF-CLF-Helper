@@ -12,11 +12,46 @@ classdef RabbitBuiltIn < CtrlAffineSysFL
                              0, 0, 0, 1, 0, 0, 0;
                              0, 0, 0, 0, 1, 0, 0];
         fall_threshold = 0.699;
+        theta_init
+        theta_end
+        a_bez
+        
+        %% Used for stepping stone scenario
+        step_min = [];
+        step_max = [];
+        steps_min = [];
+        steps_max = [];
+        step_index = [];
+        default_step_width = 0.05;
+        gamma_b
     end
     methods
         function obj = RabbitBuiltIn(params)
             % Always using built-in option for setup.
             obj = obj@CtrlAffineSysFL(params, 'built-in');
+            obj.theta_init = obj.params.theta_init;
+            obj.theta_end = obj.params.theta_end;
+            obj.a_bez = obj.params.a_bez;
+            obj.gamma_b = obj.params.gamma_b;
+            if isfield(params, 'steps_min')
+                obj.steps_min = params.steps_min;
+                if isfield(params, 'steps_max')
+                    obj.steps_max = params.steps_max;
+                else
+                    obj.steps_max = obj.steps_min + obj.default_step_width;                    
+                end
+                obj.step_min = obj.steps_min(1);
+                obj.step_max = obj.steps_max(1);
+                obj.step_index = 1;
+            elseif isfield(params, 'step_min')
+                obj.step_min = params.step_min;
+                if isfield(params, 'step_max')
+                    obj.step_max = params.stes_max;
+                else
+                    obj.step_max = obj.step_min + obj.default_step_width;                    
+                end                
+            end            
+            obj.n_cbf = 2;
         end
         
         function [f, g] = defineDynamics(obj, x)
@@ -25,18 +60,7 @@ classdef RabbitBuiltIn < CtrlAffineSysFL
             q = x(1:n); 
             dq = x(n+1:2*n);
 
-            %[D, C, G, B] = obj.gen_DCGB_rel(q);
-            %D = D_gen_rel(q, obj.params.scale, obj.params.torso_add); % 7 x 7
-            D = obj.D_gen_rel(q);
-            C = obj.C_gen_rel(q,dq); % 7 x 7
-            G = obj.G_gen_rel(q);
-            B =[0 0 0 0 
-                 0 0 0 0
-                 0 0 0 0
-                 1 0 0 0
-                 0 1 0 0
-                 0 0 1 0
-                 0 0 0 1];
+            [D, C, G, B] = obj.get_dynamics_matrices(x);
             JSt = J_RightToe(q);
             JSt = JSt([1,3],:);
             dJSt = dJ_RightToe(q,dq);
@@ -74,23 +98,10 @@ classdef RabbitBuiltIn < CtrlAffineSysFL
             q = xs(1:n, :);
             dq = xs(n+1:2*n, :);
             
-            theta = q(3, :) + q(4, :) + q(5, :)/2;
-%             theta_init = obj.params.legacy.theta_init;
-%             theta_end = obj.params.legacy.theta_end;
-%             phase = min(max((theta - theta_init)/(theta_end - theta_init)));
-            
+            theta = q(3, :) + q(4, :) + q(5, :)/2;            
             dtheta = dq(3, :) + dq(4, :) + dq(5, :)/2;
             
             zs = [theta; dtheta];
-        end
-        function B = cbf(obj, x)
-            % TODO: CBF(x)
-        end
-        function LfB = lf_cbf(obj, x)
-            % TODO: LfB(x)
-        end
-        function LgB = lg_cbf(obj, x)
-            % TODO: LgB(x)
         end
         
         function y_ = y(obj, x)
@@ -99,12 +110,9 @@ classdef RabbitBuiltIn < CtrlAffineSysFL
             q = x(1:n);
             theta = q(3) + q(4) + q(5)/2;
             
-            a_bez = obj.params.legacy.a_bez;
-            theta_init = obj.params.legacy.theta_init;
-            theta_end = obj.params.legacy.theta_end;
-            phase = min(max((theta - theta_init)/(theta_end - theta_init)));
+            phase = min(max((theta - obj.theta_init)/(obj.theta_end - obj.theta_init)));
             
-            yd = obj.bezier_outputs(a_bez, phase); % Not very structured actually
+            yd = obj.bezier_outputs(obj.a_bez, phase); % Not very structured actually
             ya = q(4:end);
             y_ = ya-yd;
         end
@@ -119,18 +127,13 @@ classdef RabbitBuiltIn < CtrlAffineSysFL
             q = x(1:n);
             dq = x(n+1: 2*n);
             
-            a_bez = obj.params.legacy.a_bez;
-            theta_init = obj.params.legacy.theta_init;
-            theta_end = obj.params.legacy.theta_end;
-            
-            dydq_des = obj.dydq_d_gen(q, a_bez, theta_init, theta_end); %[4 x 7]
+            dydq_des = obj.dydq_d_gen(q, obj.a_bez, obj.theta_init, obj.theta_end); %[4 x 7]
             dydq_act = obj.dydq_a_gen(q);
             
             Lfy = (dydq_act - dydq_des)*dq; % Use dy = Lfy + Lgyu = Lfy property
         end
         
         function Lgy = lg_y(obj, x)
-            % TODO: Not used in RABBIT
             Lgy = zeros(obj.ydim, 1);
         end
         
@@ -139,11 +142,7 @@ classdef RabbitBuiltIn < CtrlAffineSysFL
             n = obj.xdim / 2;
             q = x(1:n);
             
-            a_bez = obj.params.legacy.a_bez;
-            theta_init = obj.params.legacy.theta_init;
-            theta_end = obj.params.legacy.theta_end;
-            
-            dydq_des = obj.dydq_d_gen(q, a_bez, theta_init, theta_end); %[4 x 7]
+            dydq_des = obj.dydq_d_gen(q, obj.a_bez, obj.theta_init, obj.theta_end); %[4 x 7]
             dydq_act = obj.dydq_a_gen(q);
             g_s = obj.g(x);
             
@@ -155,16 +154,34 @@ classdef RabbitBuiltIn < CtrlAffineSysFL
             n = obj.xdim/2;
             q = x(1:n);
             dq = x(n+1:2*n);
-            
-            a_bez = obj.params.legacy.a_bez;
-            theta_init = obj.params.legacy.theta_init;
-            theta_end = obj.params.legacy.theta_end;
-            
-            L2ydq_des = obj.L2ydq_d_gen(q, dq, a_bez, theta_init, theta_end);
+                        
+            L2ydq_des = obj.L2ydq_d_gen(q, dq, obj.a_bez, obj.theta_init, obj.theta_end);
             L2ydq_act = obj.L2ydq_a_gen(q, dq);
             f_s = obj.f(x);
             
             L2fy = (L2ydq_act - L2ydq_des)*f_s;
+        end
+        
+        function [D, C, G, B] = get_dynamics_matrices(obj, x)
+            %% [D, C, G, B] = get_dynamics_matrices(obj, x)
+            % D: Mass-Intertia Matrix
+            % C: Coriollis Matrix
+            % G: Gravity Vector
+            % B: Input Mapping Matrix
+            n = obj.xdim / 2;
+            q = x(1:n); 
+            dq = x(n+1:2*n);
+            
+            D = obj.D_gen_rel(q);
+            C = obj.C_gen_rel(q,dq); % 7 x 7
+            G = obj.G_gen_rel(q);
+            B =[0 0 0 0 
+                 0 0 0 0
+                 0 0 0 0
+                 1 0 0 0
+                 0 1 0 0
+                 0 0 1 0
+                 0 0 0 1];
         end
     end
 end

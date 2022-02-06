@@ -23,9 +23,9 @@ pH_horiz_full=pH_horiz;
 
 
 %save as a video
-spwriter = VideoWriter('biped_walking.avi');
-set(spwriter, 'FrameRate', 0.3/ts,'Quality',100);
-open(spwriter);
+% spwriter = VideoWriter('biped_walking.avi');
+% set(spwriter, 'FrameRate', 0.3/ts,'Quality',100);
+% open(spwriter);
 
 fig1 = figure(1);
 set(0,'Units','pixels')
@@ -70,8 +70,8 @@ for k = 1:n
     hold on;
     pause(ts);
    %pause(0.5);
-    frame = getframe(gcf);
-      writeVideo(spwriter, frame);
+%     frame = getframe(gcf);
+%       writeVideo(spwriter, frame);
 end
 end
 
